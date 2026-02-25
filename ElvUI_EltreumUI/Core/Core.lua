@@ -207,17 +207,21 @@ end
 
 --copy of elvui abbrev
 function ElvUI_EltreumUI:Abbrev(name)
-	local letters, lastWord = '', _G.strmatch(name, '.+%s(.+)$')
-	if lastWord then
-		for word in _G.gmatch(name, '.-%s') do
-			local firstLetter = string.utf8sub(_G.gsub(word, '^[%s%p]*', ''), 1, 1)
-			if firstLetter ~= string.utf8lower(firstLetter) then
-				letters = format('%s%s. ', letters, firstLetter)
+	if ElvUI_EltreumUI:RetailInstanceSecret(name) then
+		return name
+	else
+		local letters, lastWord = '', _G.strmatch(name, '.+%s(.+)$')
+		if lastWord then
+			for word in _G.gmatch(name, '.-%s') do
+				local firstLetter = string.utf8sub(_G.gsub(word, '^[%s%p]*', ''), 1, 1)
+				if firstLetter ~= string.utf8lower(firstLetter) then
+					letters = format('%s%s. ', letters, firstLetter)
+				end
 			end
+			name = format('%s%s', letters, lastWord)
 		end
-		name = format('%s%s', letters, lastWord)
+		return name
 	end
-	return name
 end
 
 local classcolorcast = {
@@ -883,23 +887,27 @@ end
 do
 	local shortenReplace = function(t) return t:utf8sub(1,1)..'. ' end
 	function ElvUI_EltreumUI:ShortenString(text, length, cut,firstname)
-		if text and string.len(text) > length then
-			if cut then
-				text = E:ShortenString(text,length)
-			else
-				if firstname then
-					local first, last = text:match('^(%a*)(.*)$')
-					if first and last then
-						text = first.." "..last:gsub('(%S+)', shortenReplace)
+		if ElvUI_EltreumUI:RetailInstanceSecret(text) then
+			return text
+		else
+			if text and string.len(text) > length then
+				if cut then
+					text = E:ShortenString(text,length)
+				else
+					if firstname then
+						local first, last = text:match('^(%a*)(.*)$')
+						if first and last then
+							text = first.." "..last:gsub('(%S+)', shortenReplace)
+						else
+							text = text:gsub('(%S+) ', shortenReplace)
+						end
 					else
 						text = text:gsub('(%S+) ', shortenReplace)
 					end
-				else
-					text = text:gsub('(%S+) ', shortenReplace)
 				end
 			end
+			return text
 		end
-		return text
 	end
 end
 
@@ -1028,19 +1036,21 @@ else
 	_G.ColorPickerWheel:AddMaskTexture(bettermask)
 end
 
-function ElvUI_EltreumUI:RetailInstanceSecret(value)
-	local _, instanceType = _G.IsInInstance()
+function ElvUI_EltreumUI:RetailInstanceSecret(value,hasValue)
 	if E.Retail then
-		if value then
+		if hasValue then
 			if _G.canaccessvalue(value) then --new api to check if value is secret
 				return false
 			else
 				return true
 			end
-		elseif instanceType ~= "none" then
-			return true
 		else
-			return false
+			local _, instanceType = _G.IsInInstance()
+			if instanceType ~= "none" then
+				return true
+			else
+				return false
+			end
 		end
 	else
 		return false
