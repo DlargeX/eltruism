@@ -28,9 +28,10 @@ function ElvUI_EltreumUI:ApplyUnitGradientPower(unit,name)
 		unit = "player"
 	end
 
-	if not ElvUI_EltreumUI:RetailInstanceSecret(unit) and not ElvUI_EltreumUI:RetailInstanceSecret(UnitPowerType(unit)) and UnitExists(unit) then
+	if E.NotSecretUnit(unit) and UnitExists(unit) then
 		--print(powertype,unit)
 		local _, powertype = UnitPowerType(unit)
+
 		local unitframe = _G["ElvUF_"..name]
 		if unitframe and unitframe.Power and powertype then
 			if E.db.unitframe.colors.transparentPower and E.db.unitframe.colors.custompowerbackdrop then --fix transparent power custom backdrop
@@ -284,9 +285,11 @@ function ElvUI_EltreumUI:GradientPower(unit)--(unit,r,g,b)
 	if E.db.ElvUI_EltreumUI.unitframes.gradientmode.enablepower and E.db.ElvUI_EltreumUI.unitframes.UFmodifications then
 		ElvUI_EltreumUI:ApplyUnitGradientPower("player", "Player")
 		ElvUI_EltreumUI:ApplyUnitGradientPower("target", "Target")
-		ElvUI_EltreumUI:ApplyUnitGradientPower("targettarget", "TargetTarget")
 		ElvUI_EltreumUI:ApplyUnitGradientPower("pet", "Pet")
-		ElvUI_EltreumUI:ApplyUnitGradientPower("targettargettarget", "TargetTargetTarget")
+		if ElvUI_EltreumUI:IsThisASafeSecret(nil,nil,true) then
+			ElvUI_EltreumUI:ApplyUnitGradientPower("targettarget", "TargetTarget")
+			ElvUI_EltreumUI:ApplyUnitGradientPower("targettargettarget", "TargetTargetTarget")
+		end
 		if E.Retail or E.Mists or E.TBC or E.Wrath then
 			ElvUI_EltreumUI:ApplyUnitGradientPower("boss1", "Boss1")
 			ElvUI_EltreumUI:ApplyUnitGradientPower("boss2", "Boss2")
@@ -297,7 +300,9 @@ function ElvUI_EltreumUI:GradientPower(unit)--(unit,r,g,b)
 			ElvUI_EltreumUI:ApplyUnitGradientPower("boss7", "Boss7")
 			ElvUI_EltreumUI:ApplyUnitGradientPower("boss8", "Boss8")
 			ElvUI_EltreumUI:ApplyUnitGradientPower("focus", "Focus")
-			ElvUI_EltreumUI:ApplyUnitGradientPower("focustarget", "FocusTarget")
+			if ElvUI_EltreumUI:IsThisASafeSecret(nil,nil,true) then
+				ElvUI_EltreumUI:ApplyUnitGradientPower("focustarget", "FocusTarget")
+			end
 			ElvUI_EltreumUI:ApplyUnitGradientPower("arena1", "Arena1")
 			ElvUI_EltreumUI:ApplyUnitGradientPower("arena2", "Arena2")
 			ElvUI_EltreumUI:ApplyUnitGradientPower("arena3", "Arena3")
