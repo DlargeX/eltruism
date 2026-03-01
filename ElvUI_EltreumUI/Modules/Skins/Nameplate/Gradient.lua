@@ -118,8 +118,12 @@ hooksecurefunc(NP, "ThreatIndicator_PostUpdate", ElvUI_EltreumUI.ThreatIndicator
 
 --gradient nameplates
 local bordercolor = E.myClassColor
-local function GradientNameplates(unit)
+local function GradientNameplates(unit,unit2)
 	if ElvUI_EltreumUI:EncounterCheck() then return end
+	if not unit2 and not unit then return end
+	if unit2 and not unit then
+		unit = unit2
+	end
 	if not unit or not unit.unit or not unit.Health or not unit.Health:IsShown() then
 		return
 	end
@@ -205,6 +209,8 @@ local function GradientNameplates(unit)
 	end
 end
 hooksecurefunc(NP, "Health_UpdateColor", GradientNameplates)
+hooksecurefunc(NP, "StylePlate", GradientNameplates)
+hooksecurefunc(NP, "Health_SetColors", GradientNameplates)
 
 --power gradient/combo/runes
 function ElvUI_EltreumUI:NPClassPower_SetBarColor(bar, r, g, b)
