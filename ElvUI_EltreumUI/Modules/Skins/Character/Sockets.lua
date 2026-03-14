@@ -54,6 +54,7 @@ local FIELD_TYPE = 1
 local FIELD_CONTENT = 2
 local SpellInfoFunctionTable = {}
 SpellInfoFunctionTable.__index = SpellInfoFunctionTable
+local GetSpellInfo = _G.C_Spell and _G.C_Spell.GetSpellInfo or _G.GetSpellInfo
 
 --Fork of Kibs Item Level by Kibsgaard
 function ElvUI_EltreumUI:ClassicSockets()
@@ -1236,7 +1237,15 @@ function ElvUI_EltreumUI:ClassicSockets()
 			if enchantId then
 				_G.GameTooltip:SetSpellByID(enchantId)
 			else
-				_G.GameTooltip:AddLine("Missing enchant", 1, 1, 1)
+				if tooltip["items"] and tooltip["items"][1] and tooltip["items"][1][2] then
+					if tooltip["items"][1][2]:match("|H") then
+						_G.GameTooltip:SetHyperlink(tooltip["items"][1][2])
+					else
+						_G.GameTooltip:AddLine("Missing enchant", 1, 1, 1)
+					end
+				else
+					_G.GameTooltip:AddLine("Missing enchant", 1, 1, 1)
+				end
 			end
 			_G.GameTooltip:Show()
 			tooltip:Show(self.frame)
@@ -2115,7 +2124,12 @@ function ElvUI_EltreumUI:ClassicSockets()
 		if IsAddOnLoaded("Blizzard_InspectUI") and E.db.ElvUI_EltreumUI.skins.socketsinspect then
 			local inspectorSlotIconManager = 0
 			inspectorSlotIconManager = inspectorSlotIconManager + SlotIconManager.STYLE.ENABLED
-			self.inspectorSlotIconManager:SetStyle(inspectorSlotIconManager)
+			if self.inspectorSlotIconManager then
+				self.inspectorSlotIconManager:SetStyle(inspectorSlotIconManager)
+			else
+				self.inspectorSlotIconManager = SlotIconManager:new(InspectionFrameAdapter:new())
+				self.inspectorSlotIconManager:SetStyle(inspectorSlotIconManager)
+			end
 		end
 	end
 	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------INITIALIZE
