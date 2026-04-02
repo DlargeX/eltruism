@@ -2169,7 +2169,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 
 			--fix frame size depending on tab
 			local function ResizeCharacterFrame()
-				if InCombatLockdown() then
+				--[[if InCombatLockdown() then
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
 					local width = CharacterFrame:GetWidth()
 					if math.floor(width) ~= 700 then
@@ -2218,7 +2218,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					if PaperDollFrame:IsVisible() then
 						ClassCrestFrame:SetPoint("CENTER", CharacterModelFrame, 0 , 50)
 					end
-				else
+				else]]
 					CharacterFrame.Text4:Show()
 					CharacterFrame.StatusLine4:Show()
 					CharacterFrame.StatusLine2:Show()
@@ -2263,7 +2263,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							CharacterFrameBackgroundTexture:SetTexCoord(0, 0.39, 0, 1)
 						end
 					end
-				end
+				--end
 			end
 
 			CharacterFrame:HookScript("OnShow", ResizeCharacterFrame)
@@ -2953,7 +2953,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 											_G.InspectTalentFrameScrollFrame:SetSize(300,720)
 											E:Delay(0, function() _G.InspectTalentFrameScrollFrame:SetScale(0.75) end) --needs delay, maybe bc server response?
 
-											if E.Wrath then
+											if _G.InspectTalentFramePointsBar then
 												_G.InspectTalentFramePointsBar:ClearAllPoints()
 												_G.InspectTalentFramePointsBar:SetPoint("BOTTOM", _G.InspectTalentFrame.backdrop, "BOTTOM", 0, 0)
 												_G.InspectTalentFrameSpentPointsText:SetJustifyH("LEFT")
@@ -2961,7 +2961,9 @@ function ElvUI_EltreumUI:InspectBg(unit)
 											end
 
 											--kill stuff
-											_G.InspectTalentFrameCloseButton:Hide()
+											if _G.InspectTalentFrameCloseButton then
+												_G.InspectTalentFrameCloseButton:Hide()
+											end
 											if _G.InspectTalentFrameBackgroundTopRight then
 												_G.InspectTalentFrameBackgroundTopRight:Kill()
 											end
