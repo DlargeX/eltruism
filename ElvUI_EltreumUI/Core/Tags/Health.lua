@@ -11,7 +11,6 @@ local UnitIsDead = _G.UnitIsDead
 local UnitIsGhost = _G.UnitIsGhost
 local UnitHealth = _G.UnitHealth
 local UnitIsConnected = _G.UnitIsConnected
-local UnitIsUnit = _G.UnitIsUnit
 local UnitClass = _G.UnitClass
 local gsub = _G.gsub
 local format = _G.format
@@ -322,8 +321,8 @@ E:AddTag("eltruism:hpstatus:gradient", "UNIT_HEALTH UNIT_MAXHEALTH UNIT_CONNECTI
 	local deadtexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Dead\\dead"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdeadicon)..".tga"..escapeSequence.."|t"
 	local dctexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Disconnect\\dc"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdcicon)..".tga"..escapeSequence.."|t"
 	local isTarget
-	if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-		isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+	if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+		isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 	else
 		isTarget = false
 	end
@@ -415,8 +414,8 @@ E:AddTag("eltruism:hpstatusnopc:gradient", "UNIT_HEALTH UNIT_MAXHEALTH UNIT_CONN
 	local deadtexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Dead\\dead"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdeadicon)..".tga"..escapeSequence.."|t"
 	local dctexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Disconnect\\dc"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdcicon)..".tga"..escapeSequence.."|t"
 	local isTarget
-	if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-		isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+	if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+		isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 	else
 		isTarget = false
 	end
@@ -507,8 +506,8 @@ E:AddTag("eltruism:longhpstatusnopc:gradient", "UNIT_HEALTH UNIT_MAXHEALTH UNIT_
 	local deadtexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Dead\\dead"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdeadicon)..".tga"..escapeSequence.."|t"
 	local dctexture = "|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Disconnect\\dc"..tostring(E.db.ElvUI_EltreumUI.otherstuff.hpstatusdcicon)..".tga"..escapeSequence.."|t"
 	local isTarget
-	if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-		isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+	if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+		isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 	else
 		isTarget = false
 	end
@@ -594,8 +593,8 @@ if not E.Retail then
 		local cur, maxhp = UnitHealth(unit), UnitHealthMax(unit)
 		local deficit = maxhp - cur
 		local isTarget
-		if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-			isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+		if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+			isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 		else
 			isTarget = false
 		end
@@ -628,8 +627,8 @@ if not E.Retail then
 		local cur, maxhp = UnitHealth(unit), UnitHealthMax(unit)
 		local deficit = maxhp - cur
 		local isTarget
-		if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-			isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+		if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+			isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 		else
 			isTarget = false
 		end
@@ -661,8 +660,8 @@ if not E.Retail then
 	E:AddTag("eltruism:healthcurrentmaxpercentshort:gradient", 'UNIT_HEALTH UNIT_MAXHEALTH UNIT_CONNECTION PLAYER_FLAGS_CHANGED UNIT_NAME_UPDATE UNIT_TARGET', function(unit)
 		local status = not UnitIsFeignDeath(unit) and UnitIsDead(unit) and L["Dead"] or UnitIsGhost(unit) and L["Ghost"] or not UnitIsConnected(unit) and L["Offline"]
 		local isTarget
-		if ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
-			isTarget = UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
+		if not E.Retail then --ElvUI_EltreumUI:IsThisASafeSecret(unit,true) then
+			isTarget = E:UnitIsUnit(unit,"target") and not unit:match("nameplate") and not unit:match("party")
 		else
 			isTarget = false
 		end
