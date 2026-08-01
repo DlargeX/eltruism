@@ -91,9 +91,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	if not E.Retail then
 		ElvUI_EltreumUI:Doom() -- fork of Doom's Cooldown Pulse
 	end
-	if E.Wrath or E.Classic then --now mists also has the combat text functions removed it seems
-		ElvUI_EltreumUI:LootText() -- gets the combat text going if not enabled
-	end
+	ElvUI_EltreumUI:LootText() -- gets the combat text going if not enabled
 	ElvUI_EltreumUI:FixChatToggles() --attach left/right chat toggle to the new datatext
 	ElvUI_EltreumUI:ArenaQuest() --hides quests when in arena/bgs
 	ElvUI_EltreumUI:SkinLevelUp() --skins level up toast
@@ -155,6 +153,12 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:BordersTargetChanged() --fix borders for focus
 	ElvUI_EltreumUI:PerformanceCVars(false,true) --set some cvars that reset on login
 	ElvUI_EltreumUI:InitializePortraits(true) --blinkii's mmediatag portraits
+
+	--hardcore requires loading tags later so db is confirmed loaded
+	ElvUI_EltreumUI:LoadHealthTags()
+	ElvUI_EltreumUI:LoadIconTags()
+	ElvUI_EltreumUI:LoadNameTags()
+	ElvUI_EltreumUI:LoadOtherTags()
 end
 
 function ElvUI_EltreumUI:Initialize()

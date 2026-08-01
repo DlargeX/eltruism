@@ -613,13 +613,13 @@ do
 end
 
 --from elvui api, add button to game menu
-local EltruismMenuButton = CreateFrame('Button', nil, GameMenuFrame, 'GameMenuButtonTemplate')
-local isMenuExpanded = false
+--local EltruismMenuButton = CreateFrame('Button', nil, GameMenuFrame, 'GameMenuButtonTemplate')
+--local isMenuExpanded = false
 local EltruismGameMenu = CreateFrame("Frame")
 EltruismGameMenu:RegisterEvent("PLAYER_ENTERING_WORLD")
 EltruismGameMenu:SetScript("OnEvent", function()
 	if E.db.ElvUI_EltreumUI.otherstuff.gamemenu then
-		if not E.Classic then
+		--if not E.Classic then
 			--local EM = E:GetModule('EditorMode')
 			local Menubutton
 			if not _G["EltruismGameMenu"] then
@@ -700,7 +700,7 @@ EltruismGameMenu:SetScript("OnEvent", function()
 
 				end)
 			end
-		else
+		--[[else
 			if not isMenuExpanded then
 				EltruismMenuButton:SetText("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\tinylogo.tga:12:12:0:0:64:64|t".. ElvUI_EltreumUI.Name) --new 64x64 icon
 				S:HandleButton(EltruismMenuButton)
@@ -738,7 +738,7 @@ EltruismGameMenu:SetScript("OnEvent", function()
 				end)
 				isMenuExpanded = true
 			end
-		end
+		end]]
 	end
 end)
 
@@ -901,12 +901,32 @@ function ElvUI_EltreumUI:SpellInfoShapeshift(spellID,ShapeshiftFormID)
 end
 
 function ElvUI_EltreumUI:EltruismSpellInfo(spellID)
-	local spellData = GetSpellInfo(spellID)
-	if spellData then
-		return spellData.name, spellData.spellID, spellData.iconID
-	else
-		return "UNKNOWN", 187874, 136244--fallback value
+	if not spellID then
+		return nil, nil, nil
 	end
+	if _G.C_Spell and _G.C_Spell.GetOverrideSpell then
+		local override = _G.C_Spell.GetOverrideSpell(spellID)
+		if override and override ~= 0 then
+			spellID = override
+		end
+	end
+	if _G.C_Spell and _G.C_Spell.GetSpellInfo and _G.C_Spell.GetSpellInfo(spellID) then
+		local spellData = _G.C_Spell.GetSpellInfo(spellID)
+		if type(spellData) == "table" then
+			return spellData.name, spellData.spellID, spellData.iconID
+		else
+			return "UNKNOWN", 187874, 136244--fallback value
+		end
+	end
+	if type(GetSpellInfo) == "function" then
+		local name, _, icon = GetSpellInfo(spellID)
+		if type(name) == "table" then
+			return name.name, name.spellID, name.iconID
+		elseif type(name) == "string" then
+			return name, spellID, icon
+		end
+	end
+	return nil, nil, nil
 end
 
 do

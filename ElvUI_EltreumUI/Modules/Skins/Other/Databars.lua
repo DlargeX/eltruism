@@ -16,13 +16,13 @@ hooksecurefunc(DB, 'ExperienceBar_Update', ElvUI_EltreumUI.GradientDatabarXP)
 
 --gradient rep
 function ElvUI_EltreumUI:GradientDatabarRep()
-	if _G["ElvUI_ReputationBar"] and E.db.ElvUI_EltreumUI.unitframes.gradientmode.gradientReputation then
+	if _G["ElvUI_ReputationBar"] and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.unitframes and E.db.ElvUI_EltreumUI.unitframes.gradientmode.gradientReputation and E.db.ElvUI_EltreumUI.unitframes.gradientmode.gradientReputationcolors then
 		if not DB.db then return end
 		if not DB.db.colors then return end
 
 		local customColors = DB.db.colors.useCustomFactionColors
 		local _, reaction, factionID
-		if E.Retail or E.TBC or E.Mists then
+		if _G.C_Reputation and _G.C_Reputation.GetWatchedFactionData then
 			local watchedFactionData = _G.C_Reputation.GetWatchedFactionData()
 			if not watchedFactionData then return end
 			reaction, factionID = watchedFactionData.reaction, watchedFactionData.factionID
