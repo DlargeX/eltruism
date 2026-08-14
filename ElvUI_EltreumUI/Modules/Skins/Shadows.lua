@@ -1288,16 +1288,16 @@ function ElvUI_EltreumUI:Shadows()
 
 			if IsAddOnLoaded("Rarity") then --rarity loads these before
 				local rarityalreadyloads = {
-					_G.CollectionsJournalTab1.backdrop,
-					_G.CollectionsJournalTab2.backdrop,
-					_G.CollectionsJournalTab3.backdrop,
-					_G.CollectionsJournalTab4.backdrop,
-					_G.CollectionsJournalTab5.backdrop,
+					_G.CollectionsJournalTab1,
+					_G.CollectionsJournalTab2,
+					_G.CollectionsJournalTab3,
+					_G.CollectionsJournalTab4,
+					_G.CollectionsJournalTab5,
 				}
 				for _, frame in pairs(rarityalreadyloads) do
-					if frame and not frame.shadow then
-						frame:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-						ElvUI_EltreumUI:ShadowColor(frame.shadow)
+					if frame and frame.backdrop and not frame.backdrop.shadow then
+						frame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+						ElvUI_EltreumUI:ShadowColor(frame.backdrop.shadow)
 					end
 				end
 			end
@@ -4244,7 +4244,9 @@ function ElvUI_EltreumUI:NameplateShadowsAndBorders(nameplate) --??
 			if E.db.ElvUI_EltreumUI.borders.classcolor and nameplate.unit then
 				local _, className = _G.UnitClass(nameplate.unit)
 				local isPlayer = _G.UnitIsPlayer(nameplate.unit) or (E.Retail and _G.UnitInPartyIsAI(nameplate.unit))
-
+				if not E:NotSecretValue(className) then --secret class so do something else
+					className = E.myclass
+				end
 				if isPlayer then
 					bordercolor = ElvUI_EltreumUI:GetClassColorsRGB(className)
 				else
