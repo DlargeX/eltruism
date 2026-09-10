@@ -2,6 +2,7 @@ local E = unpack(ElvUI)
 local _G = _G
 local tostring = _G.tostring
 local CreateFrame = _G.CreateFrame
+local GetClassColor = _G.C_ClassColor and _G.C_ClassColor.GetClassColor or _G.GetClassColor
 
 --set the variables
 --maybe recreating colors can be avoided by setting the color as a variable and then creating if it doesnt exist like maybe so:
@@ -254,51 +255,6 @@ colorupdateframe:RegisterEvent("PLAYER_ENTERING_WORLD")
 colorupdateframe:RegisterEvent("PLAYER_STARTED_MOVING")
 colorupdateframe:RegisterEvent("FIRST_FRAME_RENDERED")
 colorupdateframe:RegisterEvent("PLAYER_LOGIN")
-
---10.2 event order list
---[[local eventorder = {
-	["ADDON_LOADED"] = true,
-	["UPDATE_BINDINGS"] = true,
-	["UPDATE_FLOATING_CHAT_WINDOWS"] = true,
-	["UI_SCALE_CHANGED"] = true,
-	["CVAR_UPDATE"] = true,
-	["UPDATE_FACTION"] = true,
-	["OPEN_SPLASH_SCREEN"] = true,
-	["VARIABLES_LOADED"] = true,
-	["UPDATE_MACROS"] = true,
-	["UPDATE_CHAT_WINDOWS"] = true,
-	["UPDATE_CHAT_COLOR"] = true,
-	["UPDATE_CHAT_COLOR_NAME_BY_CLASS"] = true,
-	["DISPLAY_SIZE_CHANGED"] = true,
-	["PLAYER_TALENT_UPDATE"] = true,
-	["PLAYER_PVP_TALENT_UPDATE"] = true,
-	["UPDATE_INVENTORY_DURABILITY"] = true,
-	["BAG_UPDATE"] = true,
-	["BAG_CONTAINER_UPDATE"] = true,
-	["UPDATE_VEHICLE_ACTIONBAR"] = true,
-	["SKILL_LINES_CHANGED"] = true,
-	["CURRENCY_DISPLAY_UPDATE"] = true,
-	["VEHICLE_ANGLE_SHOW"] = true,
-	["VEHICLE_POWER_SHOW"] = true,
-	["SPELL_ACTIVATION_OVERLAY_HIDE"] = true,
-	["MOUNT_JOURNAL_SEARCH_UPDATED"] = true,
-	["TRANSMOG_SEARCH_UPDATED"] = true,
-	["COMPACT_UNIT_FRAME_PROFILES_LOADED"] = true,
-	["INITIAL_CLUBS_LOADED"] = true,
-	["CONTENT_TRACKING_LIST_UPDATE"] = true,
-	["EDIT_MODE_LAYOUTS_UPDATED"] = true,
-	["MENTORSHIP_STATUS_CHANGED"] = true,
-	["TRAIT_CONFIG_LIST_UPDATED"] = true,
-	["CALENDAR_ACTION_PENDING"] = true,
-	--THEN FINALLY
-	["PLAYER_LOGIN"] = false,
-	--VARIABLES_LOADED also exists
-	--LOADING_SCREEN_ENABLED this too
-	--LOADING_SCREEN_DISABLED and this
-	--ADDONS_UNLOADING interesting
-	--there is also FIRST_FRAME_RENDERED
-}]]
-
 colorupdateframe:SetScript("OnEvent", function()
 	colorupdateframe:UnregisterAllEvents()
 	ElvUI_EltreumUI:GradientColorTableUpdate()
@@ -366,7 +322,7 @@ function ElvUI_EltreumUI:GradientColors(unitclass, invert, alpha, isBG, customal
 			end
 		end
 	else
-		local classColor = _G.C_ClassColor.GetClassColor(unitclass)
+		local classColor = GetClassColor(unitclass)
 		return {r = classColor.r, g = classColor.g, b = classColor.b, a = bgalpha(alpha,isHealth)}, {r = classColor.r, g = classColor.g, b = classColor.b, a = bgalpha(alpha,isHealth)}
 	end
 end
@@ -389,7 +345,7 @@ function ElvUI_EltreumUI:GradientColorsCustom(unitclass, invert, alpha, isBG, cu
 			end
 		end
 	else
-		local classColor = _G.C_ClassColor.GetClassColor(unitclass)
+		local classColor = GetClassColor(unitclass)
 		return {r = classColor.r, g = classColor.g, b = classColor.b, a = bgalpha(alpha,isHealth)}, {r = classColor.r, g = classColor.g, b = classColor.b, a = bgalpha(alpha,isHealth)}
 	end
 end

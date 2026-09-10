@@ -5,7 +5,6 @@ local colorsborders = valuecolors
 local _G = _G
 local CreateFrame = _G.CreateFrame
 local hooksecurefunc = _G.hooksecurefunc
-local EnumerateFrames = _G.EnumerateFrames
 local getmetatable = _G.getmetatable
 local type = _G.type
 local BackdropTemplateMixin = _G.BackdropTemplateMixin
@@ -73,6 +72,7 @@ end
 
 local function EltruismBorders(frame,isUnitFrameElement)
 	if (isUnitFrameElement and not (frame:GetDebugName() and frame:GetDebugName():match("AuraBar"))) then return end
+	if not E:NotSecretValue(frame) then return end --check for secret frame, avoid it
 	if E.db.ElvUI_EltreumUI.borders.universalborders and not frame.eltruismuniversalborders and not frame.eltruismuniversalbordersadded then
 		frame.eltruismuniversalborders = CreateFrame("Frame", nil, frame, BackdropTemplateMixin and "BackdropTemplate")
 		frame.eltruismuniversalborders:SetPoint("CENTER", frame, "CENTER", 0, 0)
@@ -612,7 +612,8 @@ end
 
 local function SkinFrame(object)
 	if not object then return end --rare but not impossible nil error
-	if E:IsSecretValue(object) then return end
+	--if E:IsSecretValue(object) then return end --seems to throw an error, test without it
+	if object:IsForbidden() then return end
 	if object:GetObjectType() == "Texture" then object = object:GetParent() end
 	local mt = getmetatable(object).__index
 	if not mt then return end
@@ -668,7 +669,7 @@ local function SkinFrame(object)
 								S:StatusBarColorGradient(widget, widget:GetValue(), maxValue)
 								widget.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
 								widget.backdrop:SetBackdropColor(0,0,0)
-								widget:SetStatusBarTexture(E.LSM:Fetch("statusbar", "ElvUI Norm1")) ---maybe add an option for it
+								widget:SetStatusBarTexture(E.LSM:Fetch("statusbar", E.db.ElvUI_EltreumUI.skins.elvui.widgettexture))
 
 								--[[if not atlas then
 									atlas = widget:GetStatusBarTexture():GetAtlas()
@@ -745,15 +746,44 @@ local function SkinFrame(object)
 end
 
 --based on elvui toolkit
-local loopframe = CreateFrame("Frame")
 local frametypes = {
-	["Region"] = true,
-	["Texture"] = true,
-	["Cooldown"] = true,
-	["Slider"] = true,
-	["ScrollFrame"] = true,
-	["ModelScene"] = true,
+	"Frame",
+	"Button",
+	"StatusBar",
+	"GameTooltip",
+	"CheckButton",
+	"Slider",
+	"ScrollFrame",
+	"ColorSelect",
+	"MessageFrame",
+	--[["EditBox", --this taints everything
+	"ScrollingMessageFrame",
+	"PlayerModel",
+	"ModelScene",
+	"DressUpModel",
+	"Region",
+	"Texture",
+	"Cooldown",
+	"SimpleHTML",
+	"TabardModel",
+	"Browser",
+	"FogOfWarFrame",
+	"UnitPositionFrame",
+	"MovieFrame",
+	"QuestPOIFrame",
+	"ScenarioPOIFrame",
+	"Minimap",
+	]]
+
+	--used to be blocking only:
+	--"Region",
+	--"Texture",
+	--"Cooldown",
+	--"Slider",
+	--"ScrollFrame",
+	--"ModelScene",
 }
+
 function ElvUI_EltreumUI:SetTemplateSkin()
 	if E.db.ElvUI_EltreumUI.skins.elvui.SetTemplate or E.db.ElvUI_EltreumUI.skins.ace3.enable or E.db.ElvUI_EltreumUI.skins.shadow.enable or E.db.ElvUI_EltreumUI.borders.universalborders then
 		if not E.db.ElvUI_EltreumUI.borders.classcolor then --set the variable here so its not spamming
@@ -763,22 +793,22 @@ function ElvUI_EltreumUI:SetTemplateSkin()
 				b = E.db.ElvUI_EltreumUI.borders.bordercolors.b
 			}
 		end
-		SkinFrame(loopframe)
-		loopframe = EnumerateFrames()
-		while loopframe do
-			if (not loopframe:IsForbidden()) and not frametypes[loopframe:GetObjectType()] then
-				SkinFrame(loopframe)
-				frametypes[loopframe:GetObjectType()] = true
-			end
-			loopframe = EnumerateFrames(loopframe)
+		for _, objtype in ipairs(frametypes) do
+			local dummyFrame = CreateFrame(objtype)
+			SkinFrame(dummyFrame)
 		end
-		--E:UpdateAll() --sems to be causing an error with the elvui change
+		E:UpdateAll()
+
 		E:Delay(10, function()
 			if E.db.ElvUI_EltreumUI.chat.chattoggles then
-				_G.LeftChatToggleButton:SetAlpha(1)
-				_G.LeftChatToggleButton:Show()
-				_G.RightChatToggleButton:SetAlpha(1)
-				_G.RightChatToggleButton:Show()
+				if _G.LeftChatToggleButton then
+					_G.LeftChatToggleButton:SetAlpha(1)
+					_G.LeftChatToggleButton:Show()
+				end
+				if _G.RightChatToggleButton then
+					_G.RightChatToggleButton:SetAlpha(1)
+					_G.RightChatToggleButton:Show()
+				end
 			end
 		end)
 	end

@@ -12,6 +12,8 @@ local UnitIsCharmed = _G.UnitIsCharmed
 local UnitInPartyIsAI = _G.UnitInPartyIsAI
 local UnitIsDeadOrGhost = _G.UnitIsDeadOrGhost
 local UnitIsConnected = _G.UnitIsConnected
+local UnitInParty = _G.UnitInParty
+local UnitInRaid = _G.UnitInRaid
 
 --function to check if colormixin tables are equal, if they are return false since its used to do something after that
 function ElvUI_EltreumUI:ColorMixinTableMatching(table1,table2)
@@ -26,7 +28,9 @@ end
 
 --function to update extra frames like tank and assist and their targets
 local function UpdateTankAssistFrames(button)
-	if _G[button.."1"] and _G[button.."1"]:IsVisible() then
+	local button1 = _G[button.."1"]
+	if not button1 then return end
+	if button1:IsVisible() then
 		--print("tank gradient firing",math.random(1,99))
 		for i = 1, 8 do
 			local frame = _G[button..i]
@@ -49,7 +53,7 @@ local invertframes = {
 }
 
 --set the backdrop gradient
-function ElvUI_EltreumUI:ApplyGradientBackdrop(unit,frame,englishClass,reactionunit,isGroupFrame,name)
+function ElvUI_EltreumUI:ApplyGradientBackdrop(unit,frame,englishClass,reactionunit,isGroupFrame,unitDB)
 	if E.db.ElvUI_EltreumUI.unitframes.gradientmode.enablebackdrop then
 		if E.db.unitframe.colors.transparentHealth then
 			if frame.Health and frame.Health.backdrop then
@@ -76,25 +80,21 @@ function ElvUI_EltreumUI:ApplyGradientBackdrop(unit,frame,englishClass,reactionu
 			local invert = false
 			if isGroupFrame then
 				if E.db.ElvUI_EltreumUI.unitframes.gradientmode.classcolorbackdrop then
-					colorClass = "NPCFRIENDLY"
+					colorClass = englishClass
 				end
 			else
-				if not isPlayer and not reactionunit then
-					return
-				end
-
-				if invertframes[name] then
+				if invertframes[unitDB] then
 					invert = true
-				elseif name == 'Target' and E.db.ElvUI_EltreumUI.unitframes.gradientmode.reversetarget then
+				elseif unitDB == 'target' and E.db.ElvUI_EltreumUI.unitframes.gradientmode.reversetarget then
 					invert = true
-				elseif name == 'Focus' and E.db.ElvUI_EltreumUI.unitframes.gradientmode.reversefocus then
+				elseif unitDB == 'focus' and E.db.ElvUI_EltreumUI.unitframes.gradientmode.reversefocus then
 					invert = true
 				end
 
 				if E.db.ElvUI_EltreumUI.unitframes.gradientmode.classcolorbackdrop then
 					if isPlayer then
 						colorClass = englishClass
-					else
+					elseif reactionunit then
 						if reactionunit >= 5 then
 							colorClass = "NPCFRIENDLY"
 						elseif reactionunit == 4 then
@@ -104,6 +104,8 @@ function ElvUI_EltreumUI:ApplyGradientBackdrop(unit,frame,englishClass,reactionu
 						elseif reactionunit <= 2 then
 							colorClass = "NPCHOSTILE"
 						end
+					else
+						colorClass = "NPCHOSTILE"
 					end
 				end
 			end
@@ -366,7 +368,7 @@ end
 local forced = false
 function ElvUI_EltreumUI:GradientUF(unit)
 	if ElvUI_EltreumUI:EncounterCheck() then return end
-	if E.private.unitframe.enable and E.db.ElvUI_EltreumUI.unitframes.UFmodifications and E.db.ElvUI_EltreumUI.unitframes.gradientmode.enable and (E.db.ElvUI_EltreumUI.unitframes.lightmode or E.db.ElvUI_EltreumUI.unitframes.darkmode) then
+	if E.private.unitframe.enable and E.db.ElvUI_EltreumUI.unitframes.UFmodifications and E.db.ElvUI_EltreumUI.unitframes.gradientmode.enable and E.db.ElvUI_EltreumUI.unitframes.hasMode then
 
 		--main issue = the toggle for some units like boss and arena wont work bc it checks for boss1,boss2... instead of just boss
 		ElvUI_EltreumUI:ApplyUnitGradient("player", "Player", "player")
@@ -412,7 +414,7 @@ function ElvUI_EltreumUI:GradientUF(unit)
 		end
 
 		--group/raid unitframes
-		if _G.UnitInParty("player") or _G.UnitInRaid("player") or forced then
+		if UnitInParty("player") or UnitInRaid("player") or forced then
 
 			--party/raid
 			if _G["ElvUF_Party"] and _G["ElvUF_Party"]:IsVisible() then
