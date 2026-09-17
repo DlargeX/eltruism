@@ -25,11 +25,17 @@ _G["BINDING_NAME_CLICK EltruismQuestItem11:LeftButton"] = "Quest Item 11"
 _G["BINDING_NAME_CLICK EltruismQuestItem12:LeftButton"] = "Quest Item 12"
 
 --Constants
-ElvUI_EltreumUI.Version = GetAddOnMetadata(addon, 'Version')
+local rawVersion = GetAddOnMetadata("ElvUI_EltreumUI", 'Version')
+if string.find(rawVersion, 'project%-version') then
+    ElvUI_EltreumUI.Version = "5.1.6-Dev"
+else
+    ElvUI_EltreumUI.Version = string.gsub(rawVersion, "^v", "")
+end
 ElvUI_EltreumUI.Config = {}
 --ElvUI_EltreumUI.Name = '|cff82B4ffEltruism|r'
 ElvUI_EltreumUI.Name = E:TextGradient("Eltruism", 0.50, 0.70, 1, 0.67, 0.95, 1)
 ElvUI_EltreumUI.Spec = 0
+ElvUI_EltreumUI.RequiredElvUI = 15.26
 
 function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	if not E.private.ElvUI_EltreumUI.install_version then
@@ -427,7 +433,7 @@ function ElvUI_EltreumUI:Initialize()
 		return
 	end
 	--register the plugin config
-	EP:RegisterPlugin(addon, ElvUI_EltreumUI.Configtable)
+	EP:RegisterPlugin(addon, ElvUI_EltreumUI.Configtable,false,ElvUI_EltreumUI.Version)
 	--Register Events
 	ElvUI_EltreumUI:RegisterEvent('ENCOUNTER_START') --for quests and combat music
 	ElvUI_EltreumUI:RegisterEvent('ENCOUNTER_END') --for quests and combat music
