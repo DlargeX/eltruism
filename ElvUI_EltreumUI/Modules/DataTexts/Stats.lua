@@ -23,6 +23,7 @@ local STAT_SPEED = _G.STAT_SPEED
 local STAT_LIFESTEAL = _G.STAT_LIFESTEAL
 local STAT_AVOIDANCE = _G.STAT_AVOIDANCE
 local string = _G.string
+local stringformat = string.format
 local LE_UNIT_STAT_STRENGTH = _G.LE_UNIT_STAT_STRENGTH
 local LE_UNIT_STAT_AGILITY = _G.LE_UNIT_STAT_AGILITY
 local LE_UNIT_STAT_INTELLECT = _G.LE_UNIT_STAT_INTELLECT
@@ -38,6 +39,8 @@ local GetSpellBonusHealing = _G.GetSpellBonusHealing
 local UnitAttackPower = _G.UnitAttackPower
 local UnitRangedAttackPower = _G.UnitRangedAttackPower
 local math = _G.math
+local mathmax = math.max
+local mathfloor = math.floor
 local UnitStat = _G.UnitStat
 local GetHaste = _G.GetHaste
 local GetCritChance = _G.GetCritChance
@@ -105,7 +108,7 @@ local function EltruismStatsDatatextOnEnter()
 
 	if E.Retail then
 		local retailhaste = GetHaste()
-		local retailcrit = math.max(GetCritChance(),GetSpellCritChance())
+		local retailcrit = mathmax(GetCritChance(),GetSpellCritChance())
 		local versdmg = GetCombatRatingBonus(29) + GetVersatilityBonus(29)
 		local versdef = GetCombatRatingBonus(31) + GetVersatilityBonus(31)
 		local avoidance = GetAvoidance()
@@ -118,17 +121,17 @@ local function EltruismStatsDatatextOnEnter()
 		--add line here
 		DT.tooltip:AddLine(' ')
 
-		DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", retailcrit).."|r",1,1,1)
-		DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", retailhaste).."|r",1,1,1)
-		DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r",1,1,1)
-		DT.tooltip:AddDoubleLine(STAT_VERSATILITY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", math.max(versdef,versdmg)).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", retailcrit).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", retailhaste).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_VERSATILITY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", mathmax(versdef,versdmg)).."|r",1,1,1)
 
 		--add line here
 		DT.tooltip:AddLine(' ')
 
-		DT.tooltip:AddDoubleLine(STAT_AVOIDANCE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", avoidance).."|r",1,1,1)
-		DT.tooltip:AddDoubleLine(STAT_LIFESTEAL..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", leech).."|r",1,1,1)
-		DT.tooltip:AddDoubleLine(STAT_SPEED..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", speed).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_AVOIDANCE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", avoidance).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_LIFESTEAL..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", leech).."|r",1,1,1)
+		DT.tooltip:AddDoubleLine(STAT_SPEED..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", speed).."|r",1,1,1)
 		DT.tooltip:Show()
 	else
 
@@ -139,8 +142,8 @@ local function EltruismStatsDatatextOnEnter()
 		local meleebasepower, meleebuff, meleenerf = UnitAttackPower('player')
 		local totalmelee = meleebasepower+meleebuff+meleenerf
 
-		local spellpower = math.max(GetSpellBonusDamage(2),GetSpellBonusDamage(3),GetSpellBonusDamage(4),GetSpellBonusDamage(5),GetSpellBonusDamage(6),GetSpellBonusDamage(7),GetSpellBonusHealing())
-		local spellcrit = math.max(GetSpellCritChance(2),GetSpellCritChance(3),GetSpellCritChance(4),GetSpellCritChance(5),GetSpellCritChance(6),GetSpellCritChance(7))
+		local spellpower = mathmax(GetSpellBonusDamage(2),GetSpellBonusDamage(3),GetSpellBonusDamage(4),GetSpellBonusDamage(5),GetSpellBonusDamage(6),GetSpellBonusDamage(7),GetSpellBonusHealing())
+		local spellcrit = mathmax(GetSpellCritChance(2),GetSpellCritChance(3),GetSpellCritChance(4),GetSpellCritChance(5),GetSpellCritChance(6),GetSpellCritChance(7))
 		if E.Mists or E.TBC or E.Wrath then
 			spellcrit = GetCritChance()
 		end
@@ -153,34 +156,34 @@ local function EltruismStatsDatatextOnEnter()
 		if E.myclass == "HUNTER" then
 			if E.Classic or E.TBC or E.Wrath then
 				DT.tooltip:AddDoubleLine(RANGED_ATTACK_POWER..":", ElvUI[1].media.hexvaluecolor..totalranged.."|r", 1, 1, 1)
-				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_RANGED_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetHitModifier()).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_RANGED)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_RANGED_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetHitModifier()).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_RANGED)
 			else
-				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
-				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_RANGED_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCombatRatingBonus(7)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_RANGED)
+				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_RANGED_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCombatRatingBonus(7)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_RANGED)
 			end
-			DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetRangedHaste()).."|r",1,1,1)
-			DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetRangedCritChance()).."|r",1,1,1)
+			DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetRangedHaste()).."|r",1,1,1)
+			DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetRangedCritChance()).."|r",1,1,1)
 			if E.Classic or E.TBC or E.Wrath then
 				DT.tooltip:AddLine(' ')
-				DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
 			end
 		elseif E.myclass == "WARLOCK" or E.myclass == "MAGE" or E.myclass == "PRIEST" then
 			if E.Classic or E.TBC or E.Wrath then
 				DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_POWER_SHORT..":", ElvUI[1].media.hexvaluecolor..spellpower.."|r", 1, 1, 1)
 			else
-				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
 			end
 			if E.Classic then
-				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
 			elseif E.Mists or E.TBC or E.Wrath then
-				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (math.max(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (mathmax(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
 			end
 
-			DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
-			DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", spellcrit).."|r",1,1,1)
+			DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
+			DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", spellcrit).."|r",1,1,1)
 			DT.tooltip:AddLine(' ')
 			if E.Classic or E.TBC or E.Wrath then
-				DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
 			end
 			DT.tooltip:AddDoubleLine(ITEM_MOD_SPIRIT_SHORT..":", ElvUI[1].media.hexvaluecolor..UnitStat("player", 5).."|r",1,1,1)
 		elseif E.myclass == "SHAMAN" or E.myclass == "DRUID" or E.myclass == "PALADIN" then
@@ -191,65 +194,65 @@ local function EltruismStatsDatatextOnEnter()
 				if E.myclass == "SHAMAN" or E.myclass == "DRUID" then
 					if spent2 > spent3 and spent2 > spent1 then
 						DT.tooltip:AddDoubleLine(MELEE_ATTACK_POWER..":", ElvUI[1].media.hexvaluecolor..totalmelee.."|r", 1, 1, 1)
-						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
-						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
-						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCritChance()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
+						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCritChance()).."|r",1,1,1)
 						DT.tooltip:AddLine(' ')
-						DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
-						DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
 					else
 						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_POWER_SHORT..":", ElvUI[1].media.hexvaluecolor..spellpower.."|r", 1, 1, 1)
-						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
-						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
-						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", spellcrit).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
+						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", spellcrit).."|r",1,1,1)
 						DT.tooltip:AddLine(' ')
-						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
 						DT.tooltip:AddDoubleLine(ITEM_MOD_SPIRIT_SHORT..":", ElvUI[1].media.hexvaluecolor..UnitStat("player", 5).."|r",1,1,1)
 					end
 				elseif E.myclass == "PALADIN" then
 					if spent1 > spent3 and spent1 > spent2 then
 						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_POWER_SHORT..":", ElvUI[1].media.hexvaluecolor..spellpower.."|r", 1, 1, 1)
-						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
-						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
-						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", spellcrit).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_SPELL_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (GetSpellHitModifier())).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetHaste()).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
+						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", spellcrit).."|r",1,1,1)
 						DT.tooltip:AddLine(' ')
-						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_SPELL_PENETRATION_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetSpellPenetration()).."|r",1,1,1)
 						DT.tooltip:AddDoubleLine(ITEM_MOD_SPIRIT_SHORT..":", ElvUI[1].media.hexvaluecolor..UnitStat("player", 5).."|r",1,1,1)
 					else
 						DT.tooltip:AddDoubleLine(MELEE_ATTACK_POWER..":", ElvUI[1].media.hexvaluecolor..totalmelee.."|r", 1, 1, 1)
-						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
-						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
-						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCritChance()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
+						DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCritChance()).."|r",1,1,1)
 						DT.tooltip:AddLine(' ')
-						DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
-						DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
+						DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
+						DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
 					end
 				end
 			else
-				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
-				DT.tooltip:AddDoubleLine(HIT..": ", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (math.max(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
-				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", math.max(GetCombatRatingBonus(_G.CR_HASTE_SPELL),GetMeleeHaste())).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
-				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", spellcrit).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(HIT..": ", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (mathmax(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", mathmax(GetCombatRatingBonus(_G.CR_HASTE_SPELL),GetMeleeHaste())).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
+				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", spellcrit).."|r",1,1,1)
 				DT.tooltip:AddLine(' ')
-				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetExpertise()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetExpertise()).."|r", 1, 1, 1)
 				DT.tooltip:AddDoubleLine(ITEM_MOD_SPIRIT_SHORT..":", ElvUI[1].media.hexvaluecolor..UnitStat("player", 5).."|r",1,1,1)
 			end
 		else
 			if E.Classic or E.TBC or E.Wrath then
 				DT.tooltip:AddDoubleLine(MELEE_ATTACK_POWER..":", ElvUI[1].media.hexvaluecolor..totalmelee.."|r", 1, 1, 1)
-				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
-				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
-				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetCritChance()).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_HIT_MELEE_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCombatRatingBonus(6)).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_MELEE)
+				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMeleeHaste()).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetCritChance()).."|r",1,1,1)
 				DT.tooltip:AddLine(' ')
-				DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
-				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetArmorPenetration()).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetExpertise()*0.25).."|r", 1, 1, 1)
 			else
-				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
-				DT.tooltip:AddDoubleLine(HIT..": ", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", (math.max(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
-				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", math.max(GetCombatRatingBonus(_G.CR_HASTE_SPELL),GetMeleeHaste())).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
-				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", spellcrit).."|r",1,1,1)
+				DT.tooltip:AddDoubleLine(STAT_MASTERY..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(HIT..": ", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", (mathmax(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r",1,1,1) --GetCombatRatingBonus(CR_HIT_SPELL)
+				DT.tooltip:AddDoubleLine(STAT_HASTE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", mathmax(GetCombatRatingBonus(_G.CR_HASTE_SPELL),GetMeleeHaste())).."|r",1,1,1) --GetCombatRatingBonus(CR_HASTE_SPELL)
+				DT.tooltip:AddDoubleLine(STAT_CRITICAL_STRIKE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", spellcrit).."|r",1,1,1)
 				DT.tooltip:AddLine(' ')
-				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetExpertise()).."|r", 1, 1, 1)
+				DT.tooltip:AddDoubleLine(STAT_EXPERTISE..":", ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetExpertise()).."|r", 1, 1, 1)
 				DT.tooltip:AddDoubleLine(ITEM_MOD_SPIRIT_SHORT..":", ElvUI[1].media.hexvaluecolor..UnitStat("player", 5).."|r",1,1,1)
 			end
 		end
@@ -270,25 +273,25 @@ local function EltruismStatsDatatext1(dt)
 		if not ElvUI_EltreumUI:IsThisASafeSecret(GetCritChance(),true) then return end
 		if not ElvUI_EltreumUI:IsThisASafeSecret(GetSpellCritChance(),true) then return end
 		local retailhaste = GetHaste()
-		local retailcrit = math.max(GetCritChance(),GetSpellCritChance())
-		local haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", retailhaste).."|r"
-		local crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", retailcrit).."|r"
+		local retailcrit = mathmax(GetCritChance(),GetSpellCritChance())
+		local haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", retailhaste).."|r"
+		local crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", retailcrit).."|r"
 
 		dt.text:SetFormattedText('%s %s|r',crit,haste)
 	else
 		local haste
 		local crit
-		local spellcrit = math.max(GetSpellCritChance(2),GetSpellCritChance(3),GetSpellCritChance(4),GetSpellCritChance(5),GetSpellCritChance(6),GetSpellCritChance(7))
+		local spellcrit = mathmax(GetSpellCritChance(2),GetSpellCritChance(3),GetSpellCritChance(4),GetSpellCritChance(5),GetSpellCritChance(6),GetSpellCritChance(7))
 		if E.Mists or E.TBC or E.Wrath then
 			spellcrit = GetCritChance()
 		end
 
 		if E.myclass == "HUNTER" then
-			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r"
-			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetRangedCritChance()).."|r"
+			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r"
+			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetRangedCritChance()).."|r"
 		elseif E.myclass == "WARLOCK" or E.myclass == "MAGE" or E.myclass == "PRIEST" then
-			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
-			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", spellcrit).."|r"
+			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
+			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", spellcrit).."|r"
 		elseif E.myclass == "SHAMAN" or E.myclass == "DRUID" or E.myclass == "PALADIN" then
 			if E.Classic or E.TBC or E.Wrath then
 				local _, _, _, _, spent1 = _G.GetTalentTabInfo(1)
@@ -296,28 +299,28 @@ local function EltruismStatsDatatext1(dt)
 				local _, _, _, _, spent3 = _G.GetTalentTabInfo(3)
 				if E.myclass == "SHAMAN" or E.myclass == "DRUID" then
 					if spent2 > spent3 and spent2 > spent1 then
-						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r"
-						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetCritChance()).."|r"
+						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r"
+						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetCritChance()).."|r"
 					else
-						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
-						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", spellcrit).."|r"
+						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
+						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", spellcrit).."|r"
 					end
 				elseif E.myclass == "PALADIN" then
 					if spent1 > spent3 and spent1 > spent2 then
-						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
-						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", spellcrit).."|r"
+						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
+						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", spellcrit).."|r"
 					else
-						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r"
-						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetCritChance()).."|r"
+						haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r"
+						crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetCritChance()).."|r"
 					end
 				end
 			else
-				haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
-				crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", spellcrit).."|r"
+				haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r" --GetCombatRatingBonus(CR_HASTE_SPELL)
+				crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", spellcrit).."|r"
 			end
 		else
-			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHaste()).."|r"
-			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", math.max(GetCritChance(),spellcrit)).."|r"
+			haste = STAT_HASTE..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHaste()).."|r"
+			crit = CRIT_ABBR..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", mathmax(GetCritChance(),spellcrit)).."|r"
 		end
 		dt.text:SetFormattedText('%s %s|r',crit,haste)
 	end
@@ -326,17 +329,24 @@ DT:RegisterDatatext('Eltruism Stats 1', STAT_CATEGORY_ENHANCEMENTS, {'COMBAT_RAT
 
 --mastery/vers or power/hit
 local function EltruismStatsDatatext2(dt)
-	if E.Retail then
+	if E.Forever then
+		local meleebasepower, meleebuff, meleenerf = UnitAttackPower('player')
+		local totalmelee = meleebasepower+meleebuff+meleenerf
+		local tmeleepower = ATTACK_POWER..": "..ElvUI[1].media.hexvaluecolor..totalmelee.."|r"
+		local tmeleehit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHitModifier()).."|r" --GetCombatRatingBonus(CR_HIT_MELEE)
+
+		dt.text:SetFormattedText('%s %s|r',tmeleepower,tmeleehit)
+	elseif E.Retail then
 		if not ElvUI_EltreumUI:IsThisASafeSecret(GetMasteryEffect(),true) then return end
 		if not ElvUI_EltreumUI:IsThisASafeSecret(GetCombatRatingBonus(29),true) then return end
 
 		--mastery
-		local mastery = STAT_MASTERY..": "..ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r"
+		local mastery = STAT_MASTERY..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r"
 		--versatility
 		local versdmg = GetCombatRatingBonus(29) + GetVersatilityBonus(29)
 		local versdef = GetCombatRatingBonus(31) + GetVersatilityBonus(31)
 		local versatilitylabel = E:ShortenString(STAT_VERSATILITY, 4)
-		local versatility = versatilitylabel..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", math.max(versdef,versdmg)).."|r"
+		local versatility = versatilitylabel..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", mathmax(versdef,versdmg)).."|r"
 		dt.text:SetFormattedText('%s %s|r',mastery,versatility)
 	else
 		--power
@@ -346,28 +356,28 @@ local function EltruismStatsDatatext2(dt)
 		local meleebasepower, meleebuff, meleenerf = UnitAttackPower('player')
 		local totalmelee = meleebasepower+meleebuff+meleenerf
 
-		local spellpower = math.max(GetSpellBonusDamage(2),GetSpellBonusDamage(3),GetSpellBonusDamage(4),GetSpellBonusDamage(5),GetSpellBonusDamage(6),GetSpellBonusDamage(7),GetSpellBonusHealing())
+		local spellpower = mathmax(GetSpellBonusDamage(2),GetSpellBonusDamage(3),GetSpellBonusDamage(4),GetSpellBonusDamage(5),GetSpellBonusDamage(6),GetSpellBonusDamage(7),GetSpellBonusHealing())
 
 		local tmeleepower = ATTACK_POWER..": "..ElvUI[1].media.hexvaluecolor..totalmelee.."|r"
 		local trangedpower = ATTACK_POWER..": "..ElvUI[1].media.hexvaluecolor..totalranged.."|r"
 		local tspellpower = ATTACK_POWER..": "..ElvUI[1].media.hexvaluecolor..spellpower.."|r"
 
 		--hit rating
-		local tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetCombatRatingBonus(8)).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
-		local tmeleehit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetCombatRatingBonus(6)).."|r" --GetCombatRatingBonus(CR_HIT_MELEE)
-		local trangedhit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetCombatRatingBonus(7)).."|r" --GetCombatRatingBonus(CR_HIT_RANGED)
+		local tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetCombatRatingBonus(8)).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
+		local tmeleehit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetCombatRatingBonus(6)).."|r" --GetCombatRatingBonus(CR_HIT_MELEE)
+		local trangedhit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetCombatRatingBonus(7)).."|r" --GetCombatRatingBonus(CR_HIT_RANGED)
 		if E.Classic then
-			tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", (GetSpellHitModifier())).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
-			tmeleehit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", GetHitModifier()).."|r" --GetCombatRatingBonus(CR_HIT_MELEE)
+			tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", (GetSpellHitModifier())).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
+			tmeleehit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", GetHitModifier()).."|r" --GetCombatRatingBonus(CR_HIT_MELEE)
 			trangedhit = tmeleehit
 		elseif E.Mists or E.TBC or E.Wrath then
-			tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..string.format("%.1f%%", (math.max(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
+			tspellhit = HIT..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.1f%%", (mathmax(GetSpellHitModifier(),GetCombatRatingBonus(8),GetCombatRatingBonus(6)))).."|r" --GetCombatRatingBonus(CR_HIT_SPELL)
 		end
 
 		--mastery
 		local mastery
 		if E.Mists or E.TBC or E.Wrath then
-			mastery = STAT_MASTERY..": "..ElvUI[1].media.hexvaluecolor..string.format("%.2f%%", GetMasteryEffect()).."|r"
+			mastery = STAT_MASTERY..": "..ElvUI[1].media.hexvaluecolor..stringformat("%.2f%%", GetMasteryEffect()).."|r"
 		end
 
 		if E.myclass == "HUNTER" then
@@ -421,7 +431,7 @@ local function EltruismStatsDatatext3(dt)
 	if E.Retail then
 		--dodge
 		local dodgeChance = GetDodgeChance()
-		local dodge = E:ShortenString(_G.DODGE, 5)..": "..ElvUI[1].media.hexvaluecolor..tostring(math.floor(dodgeChance*100)/100).."%".."|r"
+		local dodge = E:ShortenString(_G.DODGE, 5)..": "..ElvUI[1].media.hexvaluecolor..tostring(mathfloor(dodgeChance*100)/100).."%".."|r"
 		--armor
 		local _, effectiveArmor = UnitArmor("player")
 		local armor = E:ShortenString(_G.ARMOR, 5)..": "..ElvUI[1].media.hexvaluecolor..tostring(effectiveArmor).."|r"
@@ -433,7 +443,7 @@ local function EltruismStatsDatatext3(dt)
 		--avoidance
 		local miss = 5 + (((select(1, UnitDefense("player"))) + (select(2, UnitDefense("player"))) - (UnitLevel("player") * 5)) * 0.04)
 		local avoid = miss+GetBlockChance()+GetParryChance()+GetDodgeChance()
-		local avoidance = E:ShortenString(STAT_AVOIDANCE, 5)..": "..ElvUI[1].media.hexvaluecolor..tostring(math.floor(avoid*100)/100).."%".."|r"
+		local avoidance = E:ShortenString(STAT_AVOIDANCE, 5)..": "..ElvUI[1].media.hexvaluecolor..tostring(mathfloor(avoid*100)/100).."%".."|r"
 
 		dt.text:SetFormattedText('%s %s|r',avoidance,defense)
 	end
