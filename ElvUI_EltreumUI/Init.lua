@@ -29,9 +29,9 @@ _G["BINDING_NAME_CLICK EltruismQuestItem12:LeftButton"] = "Quest Item 12"
 --Constants
 local rawVersion = GetAddOnMetadata("ElvUI_EltreumUI", 'Version')
 if stringfind(rawVersion, 'project%-version') then
-    ElvUI_EltreumUI.Version = "5.1.6-Dev"
+	ElvUI_EltreumUI.Version = "5.1.6-Dev"
 else
-    ElvUI_EltreumUI.Version = stringgsub(rawVersion, "^v", "")
+	ElvUI_EltreumUI.Version = stringgsub(rawVersion, "^v", "")
 end
 ElvUI_EltreumUI.Config = {}
 --ElvUI_EltreumUI.Name = '|cff82B4ffEltruism|r'
@@ -80,6 +80,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 		ElvUI_EltreumUI:GroupBorderColorUpdate()
 	end)
 	ElvUI_EltreumUI:SkinVehicleButton() -- re-skin vehicle button like elvui did
+	ElvUI_EltreumUI:CacheGradients()
 	ElvUI_EltreumUI:GradientColorTableUpdate() -- should load table on init
 	ElvUI_EltreumUI:ClassIconsOnCharacterPanel() --adds class icons to character panel
 	ElvUI_EltreumUI:CursorInit() --starts cursor modules
@@ -152,6 +153,11 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 		ElvUI_EltreumUI:NamePlateOptions() --adds dynamic class based color filters to elvui nameplates
 		--ElvUI_EltreumUI:DynamicLevelStyleFilter() --shows or hides level filter on np based on player level
 		ElvUI_EltreumUI:UpdateNPwithoutBar() --updates buffs/debuffs positions on np based on powerbar settings
+
+		--return of custom nameplate heights
+		if E.db.ElvUI_EltreumUI.nameplates and E.db.ElvUI_EltreumUI.nameplates.nameplateOptions and E.db.ElvUI_EltreumUI.nameplates.nameplateOptions.enableHealthHeight then
+			ElvUI_EltreumUI:UpdateAllNameplateHeights()
+		end
 	end
 	if E.db.ElvUI_EltreumUI.dev then --load dev tools if user enables
 		ElvUI_EltreumUI:DevTools()

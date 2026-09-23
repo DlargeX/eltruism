@@ -50,14 +50,15 @@ local classcolorreaction = {
 	["NPCNEUTRAL"] = {r = 0.89, g = 0.89, b = 0},
 	["NPCUNFRIENDLY"] = {r = 0.94, g = 0.37, b = 0},
 	["NPCHOSTILE"] = {r = 0.8, g = 0, b = 0},
+	["DEBUG"] = {r = 1, g = 0, b = 0},
 }
 
 function ElvUI_EltreumUI:GetClassColorsRGB(unitclass,tableType)
 	if E:NotSecretValue(unitclass) then
 		if unitclass and classcolorreaction[unitclass] then
-			return {r = classcolorreaction[unitclass]["r"], g= classcolorreaction[unitclass]["g"],b = classcolorreaction[unitclass]["b"]}
+			return classcolorreaction[unitclass]
 		else
-			return {r = 1, g = 0, b = 0} --debug red
+			return classcolorreaction["DEBUG"]
 		end
 	else
 		local classColor = GetClassColor(unitclass)
@@ -2000,7 +2001,6 @@ local raidFrames ={
 
 function ElvUI_EltreumUI:UpdateAuraBorder(container, button)
 	if not button or not container then return end
-
 
 	local ufType = container.unitframeType or (container.parent and container.parent.unitframeType)
 	if not ufType and container.GetParent then

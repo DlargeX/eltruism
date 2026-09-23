@@ -16,6 +16,27 @@ local InCombatLockdown = _G.InCombatLockdown
 local GetPetActionInfo = _G.GetPetActionInfo
 local pairs = _G.pairs
 local GetNumRegions = _G.GetNumRegions
+local CreateColor = _G.CreateColor
+local function clamp(val)
+	if val < 0 then
+		return 0
+	elseif val > 1 then
+		return 1
+	end
+	return val
+end
+local glowMin = CreateColor(1, 1, 1, 1)
+local glowMax = CreateColor(1, 1, 1, 1)
+local totem1Min, totem1Max = CreateColor(0.38, 0.03, 0, 1), CreateColor(0.78, 0.43, 0.3, 1)
+local totem2Min, totem2Max = CreateColor(0.03, 0.25, 0, 1), CreateColor(0.43, 0.65, 0.33, 1)
+local totem3Min, totem3Max = CreateColor(0, 0.28, 0.40, 1), CreateColor(0.39, 0.68, 0.80, 1)
+local totem4Min, totem4Max = CreateColor(0.22, 0, 0.54, 1), CreateColor(0.62, 0.38, 0.94, 1)
+
+local function SetGlowGradient(texture, color)
+	glowMin:SetRGBA(clamp(color.r - 0.2), clamp(color.g - 0.2), clamp(color.b - 0.2), 1)
+	glowMax:SetRGBA(clamp(color.r + 0.2), clamp(color.g + 0.2), clamp(color.b + 0.2), 1)
+	texture:SetGradient("HORIZONTAL", glowMin, glowMax)
+end
 --moving createframes out of the function for some reason breaks it
 
 -- Skill Glow
@@ -39,10 +60,7 @@ function ElvUI_EltreumUI:SkillGlow()
 					if E.db.ElvUI_EltreumUI.glow.pixel then
 						LCG.PixelGlow_Start(button, skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 6)
 						if E.db.ElvUI_EltreumUI.glow.gradient then
-							for k,v in pairs({button._PixelGlow:GetRegions()}) do
-								local percentage = 1 - ((k*(100/(button._PixelGlow:GetNumRegions()+1)))/100)
-								v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-							end
+							ElvUI_EltreumUI:ApplyGlowGradient(button._PixelGlow, r, g, b)
 						end
 						if button.AutoCastShine then
 							button.AutoCastShine:Hide()
@@ -65,10 +83,7 @@ function ElvUI_EltreumUI:SkillGlow()
 							button._ProcGlow:Hide()
 						end
 						if E.db.ElvUI_EltreumUI.glow.gradient then
-							for k,v in pairs({button._AutoCastGlow:GetRegions()}) do
-								local percentage = 1 - ((k*(100/(button._AutoCastGlow:GetNumRegions()+1)))/100)
-								v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-							end
+							ElvUI_EltreumUI:ApplyGlowGradient(button._AutoCastGlow, r, g, b)
 						end
 					elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 						LCG.ButtonGlow_Start(button, skillglowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -86,7 +101,7 @@ function ElvUI_EltreumUI:SkillGlow()
 							if E.db.ElvUI_EltreumUI.glow.colorclass then
 								button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 							else
-								button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+								SetGlowGradient(button._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 							end
 						end
 					elseif E.db.ElvUI_EltreumUI.glow.procglow then
@@ -184,18 +199,12 @@ function ElvUI_EltreumUI:SkillGlow()
 										if E.db.ElvUI_EltreumUI.glow.pixel then
 											LCG.PixelGlow_Start(totemglow1, totem1glowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 8)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow1._PixelGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow1._PixelGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow1._PixelGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.autocast then
 											LCG.AutoCastGlow_Start(totemglow1, totem1glowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow1._AutoCastGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow1._AutoCastGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow1._AutoCastGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 											LCG.ButtonGlow_Start(totemglow1, totem1glowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -203,9 +212,9 @@ function ElvUI_EltreumUI:SkillGlow()
 											if E.db.ElvUI_EltreumUI.glow.gradient then
 												if E.db.ElvUI_EltreumUI.glow.totemtypecolor then
 													--local totem1glowcolor = {0.58, 0.23, 0.10, 1}
-													totemglow1._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = 0.38, g = 0.03, b = 0, a = 1}, {r = 0.78, g = 0.43, b = 0.3, a = 1})
+													totemglow1._ButtonGlow.outerGlow:SetGradient("HORIZONTAL", totem1Min, totem1Max)
 												else
-													totemglow1._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor.b + 0.2, a = 1})
+													SetGlowGradient(totemglow1._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowtotem1customcolor)
 												end
 											end
 										end
@@ -224,18 +233,12 @@ function ElvUI_EltreumUI:SkillGlow()
 										if E.db.ElvUI_EltreumUI.glow.pixel then
 											LCG.PixelGlow_Start(totemglow2, totem2glowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 8)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow2._PixelGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow2._PixelGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow2._PixelGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.autocast then
 											LCG.AutoCastGlow_Start(totemglow2, totem2glowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow2._AutoCastGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow2._AutoCastGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow2._AutoCastGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 											LCG.ButtonGlow_Start(totemglow2, totem2glowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -243,9 +246,9 @@ function ElvUI_EltreumUI:SkillGlow()
 											if E.db.ElvUI_EltreumUI.glow.gradient then
 												if E.db.ElvUI_EltreumUI.glow.totemtypecolor then
 													--local totem2glowcolor = {0.23,0.45,0.13, 1}
-													totemglow2._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = 0.03, g = 0.25, b = 0, a = 1}, {r = 0.43, g = 0.65, b = 0.33, a = 1})
+													totemglow2._ButtonGlow.outerGlow:SetGradient("HORIZONTAL", totem2Min, totem2Max)
 												else
-													totemglow2._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor.b + 0.2, a = 1})
+													SetGlowGradient(totemglow2._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowtotem2customcolor)
 												end
 											end
 										end
@@ -264,18 +267,12 @@ function ElvUI_EltreumUI:SkillGlow()
 										if E.db.ElvUI_EltreumUI.glow.pixel then
 											LCG.PixelGlow_Start(totemglow3, totem3glowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 8)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow3._PixelGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow3._PixelGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow3._PixelGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.autocast then
 											LCG.AutoCastGlow_Start(totemglow3, totem3glowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow3._AutoCastGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow3._AutoCastGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow3._AutoCastGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 											LCG.ButtonGlow_Start(totemglow3, totem3glowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -283,9 +280,9 @@ function ElvUI_EltreumUI:SkillGlow()
 											if E.db.ElvUI_EltreumUI.glow.gradient then
 												if E.db.ElvUI_EltreumUI.glow.totemtypecolor then
 													--local totem3glowcolor = {0.19,0.48,0.60, 1}
-													totemglow3._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = 0, g = 0.28, b = 0.40, a = 1}, {r = 0.39, g = 0.68, b = 0.80, a = 1})
+													totemglow3._ButtonGlow.outerGlow:SetGradient("HORIZONTAL", totem3Min, totem3Max)
 												else
-													totemglow3._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor.b + 0.2, a = 1})
+													SetGlowGradient(totemglow3._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowtotem3customcolor)
 												end
 											end
 										end
@@ -304,18 +301,12 @@ function ElvUI_EltreumUI:SkillGlow()
 										if E.db.ElvUI_EltreumUI.glow.pixel then
 											LCG.PixelGlow_Start(totemglow4, totem4glowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 8)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow4._PixelGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow4._PixelGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow4._PixelGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.autocast then
 											LCG.AutoCastGlow_Start(totemglow4, totem4glowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({totemglow4._AutoCastGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(totemglow4._AutoCastGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(totemglow4._AutoCastGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 											LCG.ButtonGlow_Start(totemglow4, totem4glowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -323,9 +314,9 @@ function ElvUI_EltreumUI:SkillGlow()
 											if E.db.ElvUI_EltreumUI.glow.gradient then
 												if E.db.ElvUI_EltreumUI.glow.totemtypecolor then
 													--local totem4glowcolor = {0.42,0.18,0.74, 1}
-													totemglow4._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = 0.22, g = 0, b = 0.54, a = 1}, {r = 0.62, g = 0.38, b = 0.94, a = 1})
+													totemglow4._ButtonGlow.outerGlow:SetGradient("HORIZONTAL", totem4Min, totem4Max)
 												else
-													totemglow4._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor.b + 0.2, a = 1})
+													SetGlowGradient(totemglow4._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowtotem4customcolor)
 												end
 											end
 										end
@@ -490,18 +481,12 @@ function ElvUI_EltreumUI:SkillGlow()
 													if E.db.ElvUI_EltreumUI.glow.pixel then
 														LCG.PixelGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 6)
 														if E.db.ElvUI_EltreumUI.glow.gradient then
-															for k,v in pairs({_G[buttonname]._PixelGlow:GetRegions()}) do
-																local percentage = 1 - ((k*(100/(_G[buttonname]._PixelGlow:GetNumRegions()+1)))/100)
-																v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-															end
+															ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._PixelGlow, r, g, b)
 														end
 													elseif E.db.ElvUI_EltreumUI.glow.autocast then
 														LCG.AutoCastGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 														if E.db.ElvUI_EltreumUI.glow.gradient then
-															for k,v in pairs({_G[buttonname]._AutoCastGlow:GetRegions()}) do
-																local percentage = 1 - ((k*(100/(_G[buttonname]._AutoCastGlow:GetNumRegions()+1)))/100)
-																v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-															end
+															ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._AutoCastGlow, r, g, b)
 														end
 													elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 														LCG.ButtonGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -510,7 +495,7 @@ function ElvUI_EltreumUI:SkillGlow()
 															if E.db.ElvUI_EltreumUI.glow.colorclass then
 																_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 															else
-																_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+																SetGlowGradient(_G[buttonname]._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 															end
 														end
 													end
@@ -527,18 +512,12 @@ function ElvUI_EltreumUI:SkillGlow()
 												if E.db.ElvUI_EltreumUI.glow.pixel then
 													LCG.PixelGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 6)
 													if E.db.ElvUI_EltreumUI.glow.gradient then
-															for k,v in pairs({_G[buttonname]._PixelGlow:GetRegions()}) do
-																local percentage = 1 - ((k*(100/(_G[buttonname]._PixelGlow:GetNumRegions()+1)))/100)
-																v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-															end
-														end
+														ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._PixelGlow, r, g, b)
+													end
 												elseif E.db.ElvUI_EltreumUI.glow.autocast then
 													LCG.AutoCastGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 													if E.db.ElvUI_EltreumUI.glow.gradient then
-														for k,v in pairs({_G[buttonname]._AutoCastGlow:GetRegions()}) do
-															local percentage = 1 - ((k*(100/(_G[buttonname]._AutoCastGlow:GetNumRegions()+1)))/100)
-															v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-														end
+														ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._AutoCastGlow, r, g, b)
 													end
 												elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 													LCG.ButtonGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -547,7 +526,7 @@ function ElvUI_EltreumUI:SkillGlow()
 														if E.db.ElvUI_EltreumUI.glow.colorclass then
 															_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 														else
-															_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+															SetGlowGradient(_G[buttonname]._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 														end
 													end
 												end
@@ -579,18 +558,12 @@ function ElvUI_EltreumUI:SkillGlow()
 											if E.db.ElvUI_EltreumUI.glow.pixel then
 												LCG.PixelGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 6)
 												if E.db.ElvUI_EltreumUI.glow.gradient then
-													for k,v in pairs({_G[buttonname]._PixelGlow:GetRegions()}) do
-														local percentage = 1 - ((k*(100/(_G[buttonname]._PixelGlow:GetNumRegions()+1)))/100)
-														v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-													end
+													ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._PixelGlow, r, g, b)
 												end
 											elseif E.db.ElvUI_EltreumUI.glow.autocast then
 												LCG.AutoCastGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 												if E.db.ElvUI_EltreumUI.glow.gradient then
-													for k,v in pairs({_G[buttonname]._AutoCastGlow:GetRegions()}) do
-														local percentage = 1 - ((k*(100/(_G[buttonname]._AutoCastGlow:GetNumRegions()+1)))/100)
-														v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-													end
+													ElvUI_EltreumUI:ApplyGlowGradient(_G[buttonname]._AutoCastGlow, r, g, b)
 												end
 											elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 												LCG.ButtonGlow_Start(_G[buttonname], skillglowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -599,7 +572,7 @@ function ElvUI_EltreumUI:SkillGlow()
 													if E.db.ElvUI_EltreumUI.glow.colorclass then
 														_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 													else
-														_G[buttonname]._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+														SetGlowGradient(_G[buttonname]._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 													end
 												end
 											end
@@ -684,19 +657,13 @@ function ElvUI_EltreumUI:SkillGlowPet()
 					--PixelGlow_Start(frame[, color[, N[, frequency[, length[, th[, xOffset[, yOffset[, border[ ,key]]]]]]]])
 					LCG.PixelGlow_Start(button, skillglowcolorpet, 10, 0.25, 5, 2, 0, 0, false, nil, 6)
 					if E.db.ElvUI_EltreumUI.glow.gradient then
-						for k,v in pairs({button._PixelGlow:GetRegions()}) do
-							local percentage = 1 - ((k*(100/(button._PixelGlow:GetNumRegions()+1)))/100)
-							v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-						end
+						ElvUI_EltreumUI:ApplyGlowGradient(button._PixelGlow, r, g, b)
 					end
 				elseif E.db.ElvUI_EltreumUI.glow.autocast then
 					--AutoCastGlow_Start(frame[, color[, N[, frequency[, scale[, xOffset[, yOffset[, key]]]]]]])
 					LCG.AutoCastGlow_Start(button, skillglowcolorpet, 16, 0.25, 0.7, 0, 0)
 					if E.db.ElvUI_EltreumUI.glow.gradient then
-						for k,v in pairs({button._AutoCastGlow:GetRegions()}) do
-							local percentage = 1 - ((k*(100/(button._AutoCastGlow:GetNumRegions()+1)))/100)
-							v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-						end
+						ElvUI_EltreumUI:ApplyGlowGradient(button._AutoCastGlow, r, g, b)
 					end
 				elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 					--ButtonGlow_Start(frame[, color[, frequency]]])
@@ -706,7 +673,7 @@ function ElvUI_EltreumUI:SkillGlowPet()
 						if E.db.ElvUI_EltreumUI.glow.colorclass then
 							button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 						else
-							button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+							SetGlowGradient(button._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 						end
 					end
 				elseif E.db.ElvUI_EltreumUI.glow.procglow then
@@ -791,18 +758,12 @@ function ElvUI_EltreumUI:PreviewGlow()
 		if E.db.ElvUI_EltreumUI.glow.pixel then
 			LCG.PixelGlow_Start(EltruismGlowPreview, skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberpixel, E.db.ElvUI_EltreumUI.glow.frequencypixel, E.db.ElvUI_EltreumUI.glow.lengthpixel, E.db.ElvUI_EltreumUI.glow.thicknesspixel, E.db.ElvUI_EltreumUI.glow.pixelxOffset, E.db.ElvUI_EltreumUI.glow.pixelyOffset, E.db.ElvUI_EltreumUI.glow.borderpixel, nil, 6)
 			if E.db.ElvUI_EltreumUI.glow.gradient then
-				for k,v in pairs({EltruismGlowPreview._PixelGlow:GetRegions()}) do
-					local percentage = 1 - ((k*(100/(EltruismGlowPreview._PixelGlow:GetNumRegions()+1)))/100)
-					v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-				end
+				ElvUI_EltreumUI:ApplyGlowGradient(EltruismGlowPreview._PixelGlow, r, g, b)
 			end
 		elseif E.db.ElvUI_EltreumUI.glow.autocast then
 			LCG.AutoCastGlow_Start(EltruismGlowPreview, skillglowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 			if E.db.ElvUI_EltreumUI.glow.gradient then
-				for k,v in pairs({EltruismGlowPreview._AutoCastGlow:GetRegions()}) do
-					local percentage = 1 - ((k*(100/(EltruismGlowPreview._AutoCastGlow:GetNumRegions()+1)))/100)
-					v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-				end
+				ElvUI_EltreumUI:ApplyGlowGradient(EltruismGlowPreview._AutoCastGlow, r, g, b)
 			end
 		elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 			LCG.ButtonGlow_Start(EltruismGlowPreview, skillglowcolor, E.db.ElvUI_EltreumUI.glow.frequencyblizz)
@@ -811,7 +772,7 @@ function ElvUI_EltreumUI:PreviewGlow()
 				if E.db.ElvUI_EltreumUI.glow.colorclass then
 					EltruismGlowPreview._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 				else
-					EltruismGlowPreview._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+					SetGlowGradient(EltruismGlowPreview._ButtonGlow.outerGlow, E.db.ElvUI_EltreumUI.glow.glowcustomcolor)
 				end
 			end
 		elseif E.db.ElvUI_EltreumUI.glow.procglow then
@@ -832,18 +793,16 @@ function ElvUI_EltreumUI:HideABKeyPress()
 		if E.db.ElvUI_EltreumUI.skins.hideABkeypress then
 			for i = 1, 10 do
 				for k = 1, 12 do
-					local slots = {_G["ElvUI_Bar"..i..'Button'..k]}
-					for _, button in pairs(slots) do
-						if E.db.ElvUI_EltreumUI.skins.hideABkeypress then
-							if button.checked then
-								button.checked:SetAlpha(0)
-							end
-							if button.pushed then
-								button.pushed:ClearAllPoints()
-							end
-							if button.SpellHighlightTexture then
-								button.SpellHighlightTexture:ClearAllPoints()
-							end
+					local button = _G["ElvUI_Bar"..i..'Button'..k]
+					if button then
+						if button.checked then
+							button.checked:SetAlpha(0)
+						end
+						if button.pushed then
+							button.pushed:ClearAllPoints()
+						end
+						if button.SpellHighlightTexture then
+							button.SpellHighlightTexture:ClearAllPoints()
 						end
 					end
 				end

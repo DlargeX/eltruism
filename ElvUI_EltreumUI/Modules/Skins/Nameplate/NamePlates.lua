@@ -22,16 +22,24 @@ local tostring = _G.tostring
 local GetCVar = _G.C_CVar and _G.C_CVar.GetCVar or _G.GetCVar
 local InCombatLockdown = _G.InCombatLockdown
 local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
-local TimeSinceLastUpdate = 0
 local UnitName = _G.UnitName
 local IsResting = _G.IsResting
 --local IsPlayerSpell = _G.C_SpellBook and _G.C_SpellBook.IsSpellKnown or _G.IsPlayerSpell
 local proc = {}
 local UnitAffectingCombat = _G.UnitAffectingCombat
-local GetNumRegions = _G.GetNumRegions
-local pairs = _G.pairs
 local UnitInPartyIsAI = _G.UnitInPartyIsAI
 local C_NamePlate = _G.C_NamePlate
+local CreateColor = _G.CreateColor
+local function clamp(val)
+	if val < 0 then
+		return 0
+	elseif val > 1 then
+		return 1
+	end
+	return val
+end
+local glowMin = CreateColor(1, 1, 1, 1)
+local glowMax = CreateColor(1, 1, 1, 1)
 
 -- Different Debuffs/Buffs on nameplates
 local ONUPDATE_INTERVAL = 0.1
@@ -57,7 +65,7 @@ function ElvUI_EltreumUI:PostUpdateIconDebuff(unit, button)
 			end]]
 
 			button.Cooldown:SetFrameStrata('DIALOG')
-			TimeSinceLastUpdate = 0
+			button.Cooldown.EltruismTimeSinceLastUpdate = 0
 			if not button.Cooldown or not button.Cooldown:IsShown() then
 				if E.db.ElvUI_EltreumUI.nameplates.nameplateOptions.npglow then
 					if E.db.ElvUI_EltreumUI.glow.pixel then
@@ -71,10 +79,10 @@ function ElvUI_EltreumUI:PostUpdateIconDebuff(unit, button)
 					end
 				end
 			else
-				button.Cooldown:SetScript('OnUpdate', function(_, elapsed)
-					TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-					if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
-						TimeSinceLastUpdate = 0
+				button.Cooldown:SetScript('OnUpdate', function(buttonCooldown, elapsed)
+					buttonCooldown.EltruismTimeSinceLastUpdate = (buttonCooldown.EltruismTimeSinceLastUpdate or 0) + elapsed
+					if buttonCooldown.EltruismTimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+						buttonCooldown.EltruismTimeSinceLastUpdate = 0
 
 						--hide debuffs if they are not target
 						if E.db.ElvUI_EltreumUI.nameplates.nameplateOptions.hidedebuffsnontarget then
@@ -111,19 +119,13 @@ function ElvUI_EltreumUI:PostUpdateIconDebuff(unit, button)
 										if E.db.ElvUI_EltreumUI.glow.pixel then
 											LCG.PixelGlow_Start(button, glowcolor, 6, 0.8, 4, 2, 1, 1, false, nil)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({button._PixelGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(button._PixelGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(button._PixelGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.autocast then
 											--LCG.AutoCastGlow_Start(button, glowcolor, E.db.ElvUI_EltreumUI.glow.numberauto, E.db.ElvUI_EltreumUI.glow.frequencyauto, E.db.ElvUI_EltreumUI.glow.autoscale, E.db.ElvUI_EltreumUI.glow.autoxOffset, E.db.ElvUI_EltreumUI.glow.autoyOffset)
 											LCG.AutoCastGlow_Start(button, glowcolor, 8, 1, 1.5, 1, 1)
 											if E.db.ElvUI_EltreumUI.glow.gradient then
-												for k,v in pairs({button._AutoCastGlow:GetRegions()}) do
-													local percentage = 1 - ((k*(100/(button._AutoCastGlow:GetNumRegions()+1)))/100)
-													v:SetVertexColor((r*percentage),(g*percentage),(b*percentage),1)
-												end
+												ElvUI_EltreumUI:ApplyGlowGradient(button._AutoCastGlow, r, g, b)
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.blizzard then
 											LCG.ButtonGlow_Start(button, glowcolor, 0.5)
@@ -132,7 +134,10 @@ function ElvUI_EltreumUI:PostUpdateIconDebuff(unit, button)
 												if E.db.ElvUI_EltreumUI.glow.colorclass then
 													button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",ElvUI_EltreumUI:GradientColors(E.myclass))
 												else
-													button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL",{r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r - 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g - 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b - 0.2, a = 1}, {r = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.r + 0.2, g = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.g + 0.2, b = E.db.ElvUI_EltreumUI.glow.glowcustomcolor.b + 0.2, a = 1})
+													local c = E.db.ElvUI_EltreumUI.glow.glowcustomcolor
+													glowMin:SetRGBA(clamp(c.r - 0.2), clamp(c.g - 0.2), clamp(c.b - 0.2), 1)
+													glowMax:SetRGBA(clamp(c.r + 0.2), clamp(c.g + 0.2), clamp(c.b + 0.2), 1)
+													button._ButtonGlow.outerGlow:SetGradient("HORIZONTAL", glowMin, glowMax)
 												end
 											end
 										elseif E.db.ElvUI_EltreumUI.glow.procglow then
@@ -186,11 +191,11 @@ function ElvUI_EltreumUI:PostUpdateIconBuff(unit, button)
 		if not stringfind(unit, "nameplate") then
 			return
 		else
-			TimeSinceLastUpdate = 0
-			button.Cooldown:SetScript('OnUpdate', function(_, elapsed)
-				TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-				if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
-					TimeSinceLastUpdate = 0
+			button.Cooldown.EltruismTimeSinceLastUpdate = 0
+			button.Cooldown:SetScript('OnUpdate', function(buttonCooldown2, elapsed)
+				buttonCooldown2.EltruismTimeSinceLastUpdate = (buttonCooldown2.EltruismTimeSinceLastUpdate or 0) + elapsed
+				if buttonCooldown2.EltruismTimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+					buttonCooldown2.EltruismTimeSinceLastUpdate = 0
 
 					--hide buffs if they are not in combat
 					if E.db.ElvUI_EltreumUI.nameplates.nameplateOptions.hideaurasnoncombat then
@@ -233,53 +238,61 @@ end
 hooksecurefunc(NP, "Construct_Auras", ElvUI_EltreumUI.Construct_Auras)
 
 --for general nameplates
---[[local playerclassv1 = {
-	["WARRIOR"] = "Eltreum-Class-Warrior",
-	["PALADIN"] = "Eltreum-Class-Paladin",
-	["HUNTER"] = "Eltreum-Class-Hunter",
-	["ROGUE"] = "Eltreum-Class-Rogue",
-	["PRIEST"] = "Eltreum-Class-Priest",
-	["DEATHKNIGHT"] = "Eltreum-Class-DeathKnight",
-	["SHAMAN"] = "Eltreum-Class-Paladin", -- issues becoming green due to color mixing so color changed to paladin from "Eltreum-Class-Shaman"
-	["MAGE"] = "Eltreum-Class-Paladin", -- issues becoming green due to color mixing so color changed to paladin from "Eltreum-Class-Mage"
-	["WARLOCK"] = "Eltreum-Class-Warlock",
-	["MONK"] = "Eltreum-Class-Monk",
-	["DRUID"] = "Eltreum-Class-Druid",
-	["DEMONHUNTER"] = "Eltreum-Class-DemonHunter",
-	["EVOKER"] = "Eltreum-Class-Evoker",
+local playerclassversion = {
+	[1] = {
+		["WARRIOR"] = "Eltreum-Class-Warrior",
+		["PALADIN"] = "Eltreum-Class-Paladin",
+		["HUNTER"] = "Eltreum-Class-Hunter",
+		["ROGUE"] = "Eltreum-Class-Rogue",
+		["PRIEST"] = "Eltreum-Class-Priest",
+		["DEATHKNIGHT"] = "Eltreum-Class-DeathKnight",
+		["SHAMAN"] = "Eltreum-Class-Paladin", -- issues becoming green due to color mixing so color changed to paladin from "Eltreum-Class-Shaman"
+		["MAGE"] = "Eltreum-Class-Paladin", -- issues becoming green due to color mixing so color changed to paladin from "Eltreum-Class-Mage"
+		["WARLOCK"] = "Eltreum-Class-Warlock",
+		["MONK"] = "Eltreum-Class-Monk",
+		["DRUID"] = "Eltreum-Class-Druid",
+		["DEMONHUNTER"] = "Eltreum-Class-DemonHunter",
+		["EVOKER"] = "Eltreum-Class-Evoker",
+	},
+	[2] = {
+		["WARRIOR"] = "Eltreum-Class-WarriorV2",
+		["PALADIN"] = "Eltreum-Class-PaladinV2",
+		["HUNTER"] = "Eltreum-Class-HunterV2",
+		["ROGUE"] = "Eltreum-Class-RogueV2",
+		["PRIEST"] = "Eltreum-Class-PriestV2",
+		["DEATHKNIGHT"] = "Eltreum-Class-DeathKnightV2",
+		["SHAMAN"] = "Eltreum-Class-ShamanV2",
+		["MAGE"] = "Eltreum-Class-MageV2",
+		["WARLOCK"] = "Eltreum-Class-WarlockV2",
+		["MONK"] = "Eltreum-Class-MonkV2",
+		["DRUID"] = "Eltreum-Class-DruidV2",
+		["DEMONHUNTER"] = "Eltreum-Class-DemonHunterV2",
+		["EVOKER"] = "Eltreum-Class-EvokerV2",
+	},
+	[3] = {
+		["WARRIOR"] = "Eltreum-Class-WarriorV3",
+		["PALADIN"] = "Eltreum-Class-PaladinV3",
+		["HUNTER"] = "Eltreum-Class-HunterV3",
+		["ROGUE"] = "Eltreum-Class-RogueV3",
+		["PRIEST"] = "Eltreum-Class-PriestV3",
+		["DEATHKNIGHT"] = "Eltreum-Class-DeathKnightV3",
+		["SHAMAN"] = "Eltreum-Class-ShamanV3",
+		["MAGE"] = "Eltreum-Class-MageV3",
+		["WARLOCK"] = "Eltreum-Class-WarlockV3",
+		["MONK"] = "Eltreum-Class-MonkV3",
+		["DRUID"] = "Eltreum-Class-DruidV3",
+		["DEMONHUNTER"] = "Eltreum-Class-DemonHunterV3",
+		["EVOKER"] = "Eltreum-Class-EvokerV3",
+	},
 }
 
-local playerclassv2 = {
-	["WARRIOR"] = "Eltreum-Class-WarriorV2",
-	["PALADIN"] = "Eltreum-Class-PaladinV2",
-	["HUNTER"] = "Eltreum-Class-HunterV2",
-	["ROGUE"] = "Eltreum-Class-RogueV2",
-	["PRIEST"] = "Eltreum-Class-PriestV2",
-	["DEATHKNIGHT"] = "Eltreum-Class-DeathKnightV2",
-	["SHAMAN"] = "Eltreum-Class-ShamanV2",
-	["MAGE"] = "Eltreum-Class-MageV2",
-	["WARLOCK"] = "Eltreum-Class-WarlockV2",
-	["MONK"] = "Eltreum-Class-MonkV2",
-	["DRUID"] = "Eltreum-Class-DruidV2",
-	["DEMONHUNTER"] = "Eltreum-Class-DemonHunterV2",
-	["EVOKER"] = "Eltreum-Class-EvokerV2",
-}
-
-local playerclassv3 = {
-	["WARRIOR"] = "Eltreum-Class-WarriorV3",
-	["PALADIN"] = "Eltreum-Class-PaladinV3",
-	["HUNTER"] = "Eltreum-Class-HunterV3",
-	["ROGUE"] = "Eltreum-Class-RogueV3",
-	["PRIEST"] = "Eltreum-Class-PriestV3",
-	["DEATHKNIGHT"] = "Eltreum-Class-DeathKnightV3",
-	["SHAMAN"] = "Eltreum-Class-ShamanV3",
-	["MAGE"] = "Eltreum-Class-MageV3",
-	["WARLOCK"] = "Eltreum-Class-WarlockV3",
-	["MONK"] = "Eltreum-Class-MonkV3",
-	["DRUID"] = "Eltreum-Class-DruidV3",
-	["DEMONHUNTER"] = "Eltreum-Class-DemonHunterV3",
-	["EVOKER"] = "Eltreum-Class-EvokerV3",
-}]]
+function ElvUI_EltreumUI:GetUnitTextureVersion(unitclass,version,fetch)
+	if fetch then
+		return E.LSM:Fetch("statusbar", playerclassversion[version][unitclass])
+	else
+		return playerclassversion[version][unitclass]
+	end
+end
 
 -- for rare nameplates
 local rareclass = {

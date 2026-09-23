@@ -17,6 +17,7 @@ local stringlen = string.len
 local stringupper = string.upper
 local stringutf8sub = string.utf8sub
 local stringutf8lower = string.utf8lower
+local stringgsub = string.gsub
 local tonumber = _G.tonumber
 local DELETE_ITEM_CONFIRM_STRING = _G.DELETE_ITEM_CONFIRM_STRING
 local InCombatLockdown = _G.InCombatLockdown
@@ -25,7 +26,6 @@ local GameMenuFrame = _G.GameMenuFrame
 local UIErrorsFrame = _G.UIErrorsFrame
 local RaidWarningFrame = _G.RaidWarningFrame
 local tostring = _G.tostring
-local math = _G.math
 local PlaySound = _G.PlaySound
 local W
 local GetCVar = _G.C_CVar and _G.C_CVar.GetCVar or _G.GetCVar
@@ -56,6 +56,19 @@ function ElvUI_EltreumUI:MacroClick(button)
 	button:RegisterForClicks(keydown and 'AnyDown' or 'AnyUp')
 	if E.Retail or E.TBC then
 		button:SetAttribute('useOnKeyDown', keydown)
+	end
+end
+
+--set gradient using vertex color of regions of a frame
+function ElvUI_EltreumUI:ApplyGlowGradient(glowFrame, r, g, b)
+	if not glowFrame then return end
+	local numRegions = glowFrame:GetNumRegions()
+	for k = 1, numRegions do
+		local region = select(k, glowFrame:GetRegions())
+		if region and region.SetVertexColor then
+			local percentage = 1 - ((k * (100 / (numRegions + 1))) / 100)
+			region:SetVertexColor((r * percentage), (g * percentage), (b * percentage), 1)
+		end
 	end
 end
 
@@ -555,9 +568,9 @@ function ElvUI_EltreumUI:FixChatToggles()
 		if E.global["datatexts"]["customPanels"]["EltruismDataText"] then
 			if E.global["datatexts"]["customPanels"]["EltruismDataText"]["width"] >= width then
 				if E.db.ElvUI_EltreumUI.chat.chattoggles then
-					E.global["datatexts"]["customPanels"]["EltruismDataText"]["width"] = 2 + math.ceil(width - (buttonwidth * 2))
+					E.global["datatexts"]["customPanels"]["EltruismDataText"]["width"] = 2 + ceil(width - (buttonwidth * 2))
 				else
-					E.global["datatexts"]["customPanels"]["EltruismDataText"]["width"] = math.ceil(width)
+					E.global["datatexts"]["customPanels"]["EltruismDataText"]["width"] = ceil(width)
 				end
 				E:UpdateDataTexts()
 			end
@@ -583,7 +596,7 @@ do
 
 		local text = _G.StaticPopup1Text:GetText()
 		if not text:match("|T") then
-			local deletetext = string.gsub(text, lootName, "|T"..lootTexture..":".. 14 .."|t"..itemLink.."")
+			local deletetext = stringgsub(text, lootName, "|T"..lootTexture..":".. 14 .."|t"..itemLink.."")
 			_G.StaticPopup1Text:SetText(deletetext)
 		end
 
@@ -979,11 +992,6 @@ function ElvUI_EltreumUI_OnAddonCompartmentClick()
 	--E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'ElvUI_EltreumUI')
 end
 
---set value between two other values
-function ElvUI_EltreumUI:Interval(value, minValue, maxValue)
-	return math.max(minValue, math.min(maxValue, value))
-end
-
 function ElvUI_EltreumUI:FontFlag(style)
 	if strsub(style, 0, 6) == 'SHADOW' then
 		style = strsub(style, 7)
@@ -1121,6 +1129,47 @@ if pickerWheel and _G.ColorPickerFrame then
 	bettermask:SetPoint("TOPRIGHT", pickerWheel, "TOPRIGHT", 3, 3)
 	bettermask:SetPoint("BOTTOMLEFT", pickerWheel, "BOTTOMLEFT", -2, -2)
 	pickerWheel:AddMaskTexture(bettermask)
+end
+
+--cursor positioning with 60 FPS throttle
+local GetCursorPosition = _G.GetCursorPosition
+local GetTime = _G.GetTime
+local CURSOR_THROTTLE = 0.016 --around 60fps
+local lastCursorPollTime = 0
+local lastRawCursorX, lastRawCursorY
+local lastOffsetX, lastOffsetY
+local lastScaleDivisor
+local cachedCursorPosX, cachedCursorPosY
+function ElvUI_EltreumUI:UpdateCursorPosition(frame, elapsed, force)
+	if not frame then return end
+	frame.EltruismTimeSinceLastUpdate = (frame.EltruismTimeSinceLastUpdate or 0) + (elapsed or 0)
+	if not force and frame.EltruismTimeSinceLastUpdate < CURSOR_THROTTLE then
+		return
+	end
+	frame.EltruismTimeSinceLastUpdate = 0
+
+	local now = GetTime()
+	if now ~= lastCursorPollTime or force then
+		lastCursorPollTime = now
+		local rawX, rawY = GetCursorPosition()
+		local offsetX = (E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.cursors and E.db.ElvUI_EltreumUI.cursors.cursor and E.db.ElvUI_EltreumUI.cursors.cursor.cooldownoffsetx) or 0
+		local offsetY = (E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.cursors and E.db.ElvUI_EltreumUI.cursors.cursor and E.db.ElvUI_EltreumUI.cursors.cursor.cooldownoffsety) or 0
+		local scaleDivisor = E.UIParent:GetEffectiveScale()
+		if rawX ~= lastRawCursorX or rawY ~= lastRawCursorY or offsetX ~= lastOffsetX or offsetY ~= lastOffsetY or scaleDivisor ~= lastScaleDivisor or force then
+			lastRawCursorX, lastRawCursorY = rawX, rawY
+			lastOffsetX, lastOffsetY = offsetX, offsetY
+			lastScaleDivisor = scaleDivisor
+			cachedCursorPosX = (rawX / scaleDivisor) + offsetX
+			cachedCursorPosY = (rawY / scaleDivisor) + offsetY
+		end
+	end
+
+	if cachedCursorPosX and (force or frame.EltruismCursorX ~= cachedCursorPosX or frame.EltruismCursorY ~= cachedCursorPosY) then
+		frame.EltruismCursorX = cachedCursorPosX
+		frame.EltruismCursorY = cachedCursorPosY
+		frame:ClearAllPoints()
+		frame:SetPoint("CENTER", E.UIParent, "BOTTOMLEFT", cachedCursorPosX, cachedCursorPosY)
+	end
 end
 
 function ElvUI_EltreumUI:IsThisASafeSecret(value,hasValue,isBG)
