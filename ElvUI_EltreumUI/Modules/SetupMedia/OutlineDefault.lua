@@ -1,6 +1,8 @@
 local E = unpack(ElvUI)
 local _G = _G
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
+local pairs = _G.pairs
+local next = _G.next
 
 function ElvUI_EltreumUI:SetupFontsOutlineDefault()
 	if IsAddOnLoaded("ElvUI_SLE") then
@@ -26,15 +28,10 @@ function ElvUI_EltreumUI:SetupFontsOutlineDefault()
 	E.db["databars"]["azerite"]["fontOutline"] = "THICKOUTLINE"
 	E.db["actionbar"]["extraActionButton"]["hotkeyFontOutline"] = "THICKOUTLINE"
 	E.db["unitframe"]["units"]["player"]["castbar"]["customTimeFont"]["fontStyle"] = "THICKOUTLINE"
-	if IsAddOnLoaded('ProjectAzilroka') then
-		local PAprofile = _G.ProjectAzilrokaDB["profileKeys"][E.mynameRealm]
-		if _G.ProjectAzilrokaDB["profiles"][PAprofile]["stAddonManager"] then
-			_G.ProjectAzilrokaDB["profiles"][PAprofile]["stAddonManager"]["FontFlag"] = "THICKOUTLINE"
-		end
-	end
+	E.db["unitframe"]["units"]["player"]["aurabar"]["countFontOutline"] = "THICKOUTLINE"
 	E.db["general"]["fontStyle"] = "OUTLINE"
 	E.db["general"]["minimap"]["locationFontOutline"] = "THICKOUTLINE"
-	if E.Retail then
+	if E.Modern then
 		E.db["general"]["queueStatus"]["fontOutline"] = "OUTLINE"
 	end
 	if E.Mists or E.TBC or E.Wrath then
@@ -59,7 +56,6 @@ function ElvUI_EltreumUI:SetupFontsOutlineDefault()
 	E.db["cooldown"]["totemtracker"]["fontOutline"] = "THICKOUTLINE"
 	E.db["cooldown"]["unitframe"]["fontOutline"] = "THICKOUTLINE"
 	E.db["cooldown"]["zonebutton"]["fontOutline"] = "THICKOUTLINE"
-
 
 	E.db["databars"]["experience"]["fontOutline"] = "THICKOUTLINE"
 	E.db["databars"]["reputation"]["fontOutline"] = "THICKOUTLINE"
@@ -115,6 +111,7 @@ function ElvUI_EltreumUI:SetupFontsOutlineDefault()
 	E.db["unitframe"]["units"]["raid2"]["rdebuffs"]["fontOutline"] = "THICKOUTLINE"
 	E.db["unitframe"]["units"]["raid3"]["rdebuffs"]["fontOutline"] = "THICKOUTLINE"
 	E.db["unitframe"]["units"]["tank"]["rdebuffs"]["fontOutline"] = "THICKOUTLINE"
+	E.db["unitframe"]["units"]["target"]["aurabar"]["countFontOutline"] = "THICKOUTLINE"
 	E.db["unitframe"]["units"]["pet"]["buffs"]["countFontOutline"] = "OUTLINE"
 	E.db["unitframe"]["units"]["pet"]["debuffs"]["countFontOutline"] = "OUTLINE"
 	--E.db["nameplates"]["cooldown"]["fonts"]["fontOutline"] = "THICKOUTLINE"

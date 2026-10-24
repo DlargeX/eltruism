@@ -6,7 +6,62 @@ local hooksecurefunc = _G.hooksecurefunc
 local UnitIsGhost = _G.UnitIsGhost
 local UnitIsFeignDeath = _G.UnitIsFeignDeath
 local UnitIsDeadOrGhost = _G.UnitIsDeadOrGhost
-local UF = E:GetModule('UnitFrames')
+local UnitExists = _G.UnitExists
+local UnitHealth = _G.UnitHealth
+local canaccessvalue = _G.canaccessvalue
+
+local function IsUnitDeadHelper(unit)
+	if not unit or not UnitExists(unit) then return false end
+	local isFeign = UnitIsFeignDeath(unit)
+	if canaccessvalue(isFeign) and isFeign then return false end
+	local isDead = UnitIsDead(unit)
+	if canaccessvalue(isDead) and isDead then return true end
+	local isGhost = UnitIsGhost(unit)
+	if canaccessvalue(isGhost) and isGhost then return true end
+	local isDeadOrGhost = UnitIsDeadOrGhost(unit)
+	if canaccessvalue(isDeadOrGhost) and isDeadOrGhost then return true end
+	local health = UnitHealth(unit)
+	if canaccessvalue(health) and health and health <= 0 then return true end
+	return false
+end
+ElvUI_EltreumUI.IsUnitDeadHelper = IsUnitDeadHelper
+
+local function UpdateUnitPortraitDead(frame, unit)
+	if not frame or not E.db.ElvUI_EltreumUI.unitframes.portraitdead then return end
+	local u = unit or frame.__unit or frame.unit
+	if not u then return end
+
+	local isDead = IsUnitDeadHelper(u)
+	local db = frame.db or (E.db.unitframe.units and (E.db.unitframe.units[u] or (frame.unitframeType and E.db.unitframe.units[frame.unitframeType])))
+	if not db then return end
+	local portrait = frame.Portrait3D or (frame.Portrait and frame.Portrait.playerModel and frame.Portrait)
+	if portrait and portrait.SetPaused and portrait.SetDesaturation then
+		if isDead then
+			portrait:SetPaused(true)
+			portrait:SetDesaturation(1)
+		else
+			portrait:SetPaused(false)
+			portrait:SetDesaturation(0)
+			local overlayAlpha = (portrait.db and portrait.db.overlayAlpha) or (db.portrait and db.portrait.overlayAlpha) or db.overlayAlpha or 0.3
+			portrait:SetAlpha(overlayAlpha)
+		end
+	elseif frame.Portrait then
+		if frame.Portrait.SetDesaturated then
+			frame.Portrait:SetDesaturated(isDead)
+		elseif frame.Portrait.SetDesaturation then
+			frame.Portrait:SetDesaturation(isDead and 1 or 0)
+		end
+	end
+
+	if frame.EltruismPortrait and frame.EltruismPortrait.portrait then
+		if frame.EltruismPortrait.portrait.SetDesaturated then
+			frame.EltruismPortrait.portrait:SetDesaturated(isDead)
+		elseif frame.EltruismPortrait.portrait.SetDesaturation then
+			frame.EltruismPortrait.portrait:SetDesaturation(isDead and 1 or 0)
+		end
+	end
+end
+ElvUI_EltreumUI.UpdateUnitPortraitDead = UpdateUnitPortraitDead
 
 local druidshamanfix = {
 	[1272625] = true, --""druidbear2_artifact1.m2",
@@ -475,6 +530,8 @@ local modelsRotate = {
 	[6211938] = true, --Arator
 	[6225127] = true, --Lady Liadrin
 	[3049179] = true, --Valeera Sanguinar
+	[7478494] = true, --female skyborne
+	[7478487] = true, --male skyborne
 }
 
 local targetlike = {
@@ -515,243 +572,322 @@ end
 
 --fix portrait rotation since they dont align correctly due to how blizzard makes models
 local modelcheck = CreateFrame("PlayerModel", "EltruismPortraitFixModel")
-function ElvUI_EltreumUI:PortraitFix(unit)
+function ElvUI_EltreumUI:PortraitFix(portrait, unit)
+	if not portrait or not portrait.playerModel then return end
 	if ElvUI_EltreumUI:EncounterCheck() then return end
-	if self.playerModel then
-		if E.db.ElvUI_EltreumUI.unitframes.portraitfix then
-			local model = self:GetModelFileID()
-			if not model then
-				modelcheck:SetUnit(unit) --use a different model to get the file id since the file id is nil when the frame has 0 alpha from fader
-				model = modelcheck:GetModelFileID()
-				modelcheck:ClearModel()
-			end
-			local newrotation = 0
-			local xOffset = 0
+	if E.db.ElvUI_EltreumUI.unitframes.portraitfix then
+		local model = portrait:GetModelFileID()
+		if not model then
+			modelcheck:SetUnit(unit) --use a different model to get the file id since the file id is nil when the frame has 0 alpha from fader
+			model = modelcheck:GetModelFileID()
+			modelcheck:ClearModel()
+		end
+		local newrotation = 0
+		local xOffset = 0
 
-			--pause if dead or ghost
-			if E.db.ElvUI_EltreumUI.unitframes.portraitdead then
-				if UnitIsDeadOrGhost(unit) and not UnitIsFeignDeath(unit) then
-					self:SetPaused(true)
-					self:SetDesaturation(1)
-				else
-					self:SetPaused(false)
-					self:SetDesaturation(0)
-				end
-			end
-
-			if unit == 'player' or playerlike[unit] then
-				if not model then return end
-				if modelsRotate[model]then
-					newrotation = 0
-				elseif model == 926251 then
-					newrotation = 99
-				elseif model == 5091437 then
-					newrotation = 28 --druid qonzu bird
-				elseif catabearform[model] then
-					newrotation = 0
-				else
-					newrotation = 67--3
-				end
-				if E.db.ElvUI_EltreumUI.unitframes.portraitfixoffset then
-					if model == 1273833 then
-						xOffset = -0.59 --cat
-						if self:GetParent().unitframeType == "party" then
-							xOffset = -1
-						end
-					elseif model == 1505169 or model == 5143717 then
-						xOffset = 0.62 --bear
-					elseif model == 4207724 then
-						xOffset = 0.5 --dracthyr
-					elseif druidshamanfix[model] or model == 926251 then
-						xOffset = -0.39 --other bears
-						if self:GetParent().unitframeType == "party" then
-							xOffset = -1
-						end
-					elseif model == 1043712 then
-						xOffset = -1 --shaman raptor
-						if self:GetParent().unitframeType == "party" then
-							xOffset = -2.3
-						end
-					elseif catabearform[model] then
-						xOffset = 0.62 --cata bears
-					elseif self:GetParent().unitframeType == "pet" then
-						xOffset = -1 --offset the pets because they would be outside
-					end
-				end
-			elseif unit == 'target' or targetlike[unit] then
-				if not model then return end
-				if modelsRotate[model] then
-					newrotation = 291
-				elseif catabearform[model] then
-					newrotation = 270 --cata bears
-				end
-				if E.db.ElvUI_EltreumUI.unitframes.portraitfixoffset then
-					if model == 5091437 then
-						xOffset = 0 --druid things
-					elseif model == 1273833 or druidshamanfix[model] or model == 926251 or model == 1043712 then
-						xOffset = -0.59 --druid things
-					elseif model == 1505169 or model == 5143717 then
-						xOffset = 0.25 --bear
-					elseif dracthyrlikefix[model] then
-						xOffset = 0.6 --dracthyr and lightforged
-					elseif catabearform[model] then
-						xOffset = 0.17 --cata bears
-					end
-				end
-			end
-
-			if newrotation ~= 0 then
-				local db = self.db
-				if not db then return end
-				self:SetRotation(_G.rad(newrotation))
-				self:SetViewTranslation(xOffset * 100, db.yOffset * 100)
+		--pause if dead or ghost
+		if E.db.ElvUI_EltreumUI.unitframes.portraitdead then
+			local pDb = portrait.db or (portrait:GetParent() and portrait:GetParent().db)
+			if IsUnitDeadHelper(unit) then
+				portrait:SetPaused(true)
+				portrait:SetDesaturation(1)
 			else
-				--prob couldnt get model bc it was nil from PEW, so reset stuff
-				self:SetRotation(0)
-				if xOffset ~= 0 then
-					local db = self.db
-					if not db then return end
-					self:SetViewTranslation(xOffset * 100, db.yOffset * 100)
-				else
-					self:SetViewTranslation(0, 0)
+				portrait:SetPaused(false)
+				portrait:SetDesaturation(0)
+				local overlayAlpha = (portrait.db and portrait.db.overlayAlpha) or (pDb and pDb.overlayAlpha) or (pDb and pDb.portrait and pDb.portrait.overlayAlpha) or 0.3
+				portrait:SetAlpha(overlayAlpha)
+			end
+		end
+
+		if unit == 'player' or playerlike[unit] then
+			if not model then return end
+			if modelsRotate[model]then
+				newrotation = 0
+			elseif model == 926251 then
+				newrotation = 99
+			elseif model == 5091437 then
+				newrotation = 28 --druid qonzu bird
+			elseif catabearform[model] then
+				newrotation = 0
+			else
+				newrotation = 67--3
+			end
+			if E.db.ElvUI_EltreumUI.unitframes.portraitfixoffset then
+				if model == 1273833 then
+					xOffset = -0.59 --cat
+					if portrait:GetParent() and portrait:GetParent().unitframeType == "party" then
+						xOffset = -1
+					end
+				elseif model == 1505169 or model == 5143717 then
+					xOffset = 0.62 --bear
+				elseif model == 4207724 then
+					xOffset = 0.5 --dracthyr
+				elseif druidshamanfix[model] or model == 926251 then
+					xOffset = -0.39 --other bears
+					if portrait:GetParent() and portrait:GetParent().unitframeType == "party" then
+						xOffset = -1
+					end
+				elseif model == 1043712 then
+					xOffset = -1 --shaman raptor
+					if portrait:GetParent() and portrait:GetParent().unitframeType == "party" then
+						xOffset = -2.3
+					end
+				elseif catabearform[model] then
+					xOffset = 0.62 --cata bears
+				elseif portrait:GetParent() and portrait:GetParent().unitframeType == "pet" then
+					xOffset = -1 --offset the pets because they would be outside
 				end
+			end
+		elseif unit == 'target' or targetlike[unit] then
+			if not model then return end
+			if modelsRotate[model] then
+				newrotation = 291
+			elseif catabearform[model] then
+				newrotation = 270 --cata bears
+			end
+			if E.db.ElvUI_EltreumUI.unitframes.portraitfixoffset then
+				if model == 5091437 then
+					xOffset = 0 --druid things
+				elseif model == 1273833 or druidshamanfix[model] or model == 926251 or model == 1043712 then
+					xOffset = -0.59 --druid things
+				elseif model == 1505169 or model == 5143717 then
+					xOffset = 0.25 --bear
+				elseif dracthyrlikefix[model] then
+					xOffset = 0.6 --dracthyr and lightforged
+				elseif catabearform[model] then
+					xOffset = 0.17 --cata bears
+				end
+			end
+		end
+
+		if newrotation ~= 0 then
+			local db = portrait.db
+			if not db then return end
+			portrait:SetRotation(_G.rad(newrotation))
+			portrait:SetViewTranslation(((xOffset ~= 0 and xOffset) or db.xOffset or 0) * 100, (db.yOffset or 0) * 100)
+		else
+			--prob couldnt get model bc it was nil from PEW, so reset stuff
+			portrait:SetRotation(0)
+			if xOffset ~= 0 then
+				local db = portrait.db
+				if not db then return end
+				portrait:SetViewTranslation(xOffset * 100, (db.yOffset or 0) * 100)
+			else
+				portrait:SetViewTranslation(0, 0)
 			end
 		end
 	end
 end
-hooksecurefunc(UF, "PortraitUpdate", ElvUI_EltreumUI.PortraitFix)
 
---handling player death
-local playerdeath = CreateFrame("FRAME")
-playerdeath:RegisterEvent("PLAYER_DEAD")
-playerdeath:RegisterEvent("PLAYER_UNGHOST")
-playerdeath:RegisterEvent("PLAYER_ALIVE")
-playerdeath:RegisterUnitEvent("UNIT_FLAGS","player")
-playerdeath:SetScript("OnEvent", function()
-	if E.db.ElvUI_EltreumUI.unitframes.portraitfix and E.private.unitframe.enable then
-		if E.db.unitframe.units.player.enable and E.db.unitframe.units.player.portrait.enable and E.db.unitframe.units.player.portrait.style == "3D" then
-			if _G["ElvUF_Player"] and _G["ElvUF_Player"].Portrait3D then
-				E:Delay(0,function()
-					if UnitIsDead("player") or UnitIsGhost("player") then
-						_G["ElvUF_Player"].Portrait3D:SetPaused(true)
-						_G["ElvUF_Player"].Portrait3D:SetDesaturation(1)
-					else
-						_G["ElvUF_Player"].Portrait3D:SetPaused(false)
-						_G["ElvUF_Player"].Portrait3D:SetDesaturation(0)
-					end
-				end)
+--handling unit death (player, party/followers, target, focus, boss)
+local singleFrames = {
+	player = "ElvUF_Player",
+	target = "ElvUF_Target",
+	focus = "ElvUF_Focus",
+	pet = "ElvUF_Pet",
+	targettarget = "ElvUF_TargetTarget",
+	focustarget = "ElvUF_FocusTarget",
+}
+
+local partyUnits = {
+	party1 = true,
+	party2 = true,
+	party3 = true,
+	party4 = true,
+	party5 = true,
+}
+
+local unitdeath = CreateFrame("FRAME")
+unitdeath:RegisterEvent("PLAYER_DEAD")
+unitdeath:RegisterEvent("PLAYER_UNGHOST")
+unitdeath:RegisterEvent("PLAYER_ALIVE")
+unitdeath:RegisterEvent("PLAYER_TARGET_CHANGED")
+unitdeath:RegisterEvent("PLAYER_FOCUS_CHANGED")
+unitdeath:RegisterEvent("PARTY_MEMBER_DISABLE")
+unitdeath:RegisterEvent("PARTY_MEMBER_ENABLE")
+unitdeath:RegisterEvent("GROUP_ROSTER_UPDATE")
+unitdeath:RegisterUnitEvent("UNIT_FLAGS","player")
+--unitdeath:RegisterEvent("UNIT_HEALTH")
+
+local function DeathEventDispatch(_, event, unit)
+	if not E.private.unitframe.enable or not E.db.ElvUI_EltreumUI.unitframes.portraitfix or not E.db.ElvUI_EltreumUI.unitframes.portraitdead then return end
+
+	if event == "PLAYER_DEAD" or event == "PLAYER_UNGHOST" or event == "PLAYER_ALIVE" then
+		if _G["ElvUF_Player"] then
+			UpdateUnitPortraitDead(_G["ElvUF_Player"], "player")
+			E:Delay(0, function() UpdateUnitPortraitDead(_G["ElvUF_Player"], "player") end)
+		end
+		return
+	elseif event == "PLAYER_TARGET_CHANGED" then
+		if _G["ElvUF_Target"] then
+			UpdateUnitPortraitDead(_G["ElvUF_Target"], "target")
+		end
+		return
+	elseif event == "PLAYER_FOCUS_CHANGED" then
+		if _G["ElvUF_Focus"] then
+			UpdateUnitPortraitDead(_G["ElvUF_Focus"], "focus")
+		end
+		return
+	elseif event == "PARTY_MEMBER_DISABLE" or event == "PARTY_MEMBER_ENABLE" or event == "GROUP_ROSTER_UPDATE" then
+		for i = 1, 5 do
+			local btn = _G["ElvUF_PartyGroup1UnitButton"..i]
+			if btn and (btn.unit or btn.__unit) then
+				UpdateUnitPortraitDead(btn, btn.unit or btn.__unit)
 			end
 		end
+		return
 	end
-end)
+
+	if not unit then return end
+
+	if singleFrames[unit] then
+		local frame = _G[singleFrames[unit]]
+		if frame then
+			UpdateUnitPortraitDead(frame, unit)
+		end
+		if unit == "player" then
+			for i = 1, 5 do
+				local btn = _G["ElvUF_PartyGroup1UnitButton"..i]
+				if btn and (btn.unit == "player" or btn.__unit == "player") then
+					UpdateUnitPortraitDead(btn, "player")
+					break
+				end
+			end
+		end
+	elseif partyUnits[unit] then
+		for i = 1, 5 do
+			local btn = _G["ElvUF_PartyGroup1UnitButton"..i]
+			if btn and (btn.unit == unit or btn.__unit == unit) then
+				UpdateUnitPortraitDead(btn, unit)
+				break
+			end
+		end
+	elseif unit:sub(1, 4) == "boss" then
+		local bossFrame = _G["ElvUF_Boss" .. unit:sub(5)]
+		if bossFrame then
+			UpdateUnitPortraitDead(bossFrame, unit)
+		end
+	end
+end
+
+unitdeath:SetScript("OnEvent", DeathEventDispatch)
 
 --hoping this is a temporary fix and blizzard actually fixes models not inherithing the parent's alpha
 
---fix alpha on login
-local pewcheck = CreateFrame("FRAME")
-pewcheck:RegisterEvent("PLAYER_ENTERING_WORLD")
-pewcheck:SetScript("OnEvent",function()
-	if _G["ElvUF_Player"] and E.db.unitframe.units.player.fader.enable and E.db.unitframe.units.player.fader.minAlpha == 0 then
-		E:Delay(0, function()
-			if not _G["ElvUF_Player"].EltruismAlphaCheck and E.db.unitframe.units.player.fader.smooth == 0 then --another hook to fix when not using elvui fader smoothing
-				hooksecurefunc(_G["ElvUF_Player"], "SetAlpha", function(_,alpha)
-					if alpha == 0 then
-						if _G["EltruismPlayerEffect"] then
-							_G["EltruismPlayerEffect"]:SetAlpha(0)
-						end
-						if _G["EltruismPlayerPowerBarEffect"] then
-							_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0)
-						end
-					else
-						if _G["EltruismPlayerEffect"] then
-							if E.db.ElvUI_EltreumUI.unitframes.lightmode then
-								_G["EltruismPlayerEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalpha)
-							else
-								_G["EltruismPlayerEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalphadark)
-							end
-						end
-						if _G["EltruismPlayerPowerBarEffect"] then
-							if E.Retail then
-								_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.4)
-							else
-								_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.8)
-							end
-						end
-					end
-				end)
-				if _G["ElvUF_Pet"] then
-					hooksecurefunc(_G["ElvUF_Pet"], "SetAlpha", function(_,alpha)
-					if alpha == 0 then
-						if _G["EltruismPetPowerBarEffect"] then
-							_G["EltruismPetPowerBarEffect"]:SetAlpha(0)
-						end
-						if _G["EltruismPetEffect"] then
-							_G["EltruismPetEffect"]:SetAlpha(0)
-						end
-					else
-						if _G["EltruismPetPowerBarEffect"] then
-							if E.Retail then
-								_G["EltruismPetPowerBarEffect"]:SetAlpha(0.8)
-							else
-								_G["EltruismPetPowerBarEffect"]:SetAlpha(0.6)
-							end
-						end
-						if _G["EltruismPetEffect"] then
-							if E.db.ElvUI_EltreumUI.unitframes.lightmode then
-								_G["EltruismPetEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalpha)
-							else
-								_G["EltruismPetEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalphadark)
-							end
-						end
-					end
-					end)
-				end
-				_G["ElvUF_Player"].EltruismAlphaCheck = true
-			end
-			if _G["EltruismPlayerEffect"] then
-				_G["EltruismPlayerEffect"]:SetAlpha(0)
-			end
-			if _G["EltruismPlayerPowerBarEffect"] then
-				_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0)
-			end
-			if _G["EltruismPetPowerBarEffect"] then
-				_G["EltruismPetPowerBarEffect"]:SetAlpha(0)
-			end
-			if _G["EltruismPetEffect"] then
-				_G["EltruismPetEffect"]:SetAlpha(0)
-			end
-		end)
-	end
-end)
-
---flags changed fix
-local flagcheck = CreateFrame("FRAME")
-flagcheck:RegisterUnitEvent("PLAYER_FLAGS_CHANGED", "player") --model seems to update when flags are changed
-flagcheck:SetScript("OnEvent",function()
-	if ElvUI_EltreumUI:EncounterCheck() then return end
-	if _G["ElvUF_Player"] and E.db.unitframe.units.player.fader.enable and E.db.unitframe.units.player.fader.minAlpha == 0 then
-		E:Delay(0, function()
-			if _G["ElvUF_Player"]:GetAlpha() == 0 then
+local function PEWDelayCheck()
+	if not _G["ElvUF_Player"].EltruismAlphaCheck and E.db.unitframe.units.player.fader.smooth == 0 then --another hook to fix when not using elvui fader smoothing
+		hooksecurefunc(_G["ElvUF_Player"], "SetAlpha", function(_,alpha)
+			if alpha == 0 then
 				if _G["EltruismPlayerEffect"] then
 					_G["EltruismPlayerEffect"]:SetAlpha(0)
 				end
 				if _G["EltruismPlayerPowerBarEffect"] then
 					_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0)
 				end
+			else
+				if _G["EltruismPlayerEffect"] then
+					if E.db.ElvUI_EltreumUI.unitframes.lightmode then
+						_G["EltruismPlayerEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalpha)
+					else
+						_G["EltruismPlayerEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalphadark)
+					end
+				end
+				if _G["EltruismPlayerPowerBarEffect"] then
+					if E.Modern then
+						_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.4)
+					else
+						_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.8)
+					end
+				end
 			end
 		end)
-	end
-	if _G["ElvUF_Pet"] and E.db.unitframe.units.pet.fader.enable and E.db.unitframe.units.pet.fader.minAlpha == 0 then
-		E:Delay(0, function()
-			if _G["ElvUF_Pet"]:GetAlpha() == 0 then
-				if _G["EltruismPetEffect"] then
-					_G["EltruismPetEffect"]:SetAlpha(0)
-				end
+		if _G["ElvUF_Pet"] then
+			hooksecurefunc(_G["ElvUF_Pet"], "SetAlpha", function(_,alpha)
+			if alpha == 0 then
 				if _G["EltruismPetPowerBarEffect"] then
 					_G["EltruismPetPowerBarEffect"]:SetAlpha(0)
 				end
+				if _G["EltruismPetEffect"] then
+					_G["EltruismPetEffect"]:SetAlpha(0)
+				end
+			else
+				if _G["EltruismPetPowerBarEffect"] then
+					if E.Modern then
+						_G["EltruismPetPowerBarEffect"]:SetAlpha(0.8)
+					else
+						_G["EltruismPetPowerBarEffect"]:SetAlpha(0.6)
+					end
+				end
+				if _G["EltruismPetEffect"] then
+					if E.db.ElvUI_EltreumUI.unitframes.lightmode then
+						_G["EltruismPetEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalpha)
+					else
+						_G["EltruismPetEffect"]:SetAlpha(E.db.ElvUI_EltreumUI.unitframes.models.ufalphadark)
+					end
+				end
 			end
-		end)
+			end)
+		end
+		_G["ElvUF_Player"].EltruismAlphaCheck = true
+	end
+	if _G["EltruismPlayerEffect"] then
+		_G["EltruismPlayerEffect"]:SetAlpha(0)
+	end
+	if _G["EltruismPlayerPowerBarEffect"] then
+		_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0)
+	end
+	if _G["EltruismPetPowerBarEffect"] then
+		_G["EltruismPetPowerBarEffect"]:SetAlpha(0)
+	end
+	if _G["EltruismPetEffect"] then
+		_G["EltruismPetEffect"]:SetAlpha(0)
+	end
+end
+
+--fix alpha on login
+local pewcheck = CreateFrame("FRAME")
+pewcheck:RegisterEvent("PLAYER_ENTERING_WORLD")
+pewcheck:SetScript("OnEvent",function()
+	if _G["ElvUF_Player"] and E.db.unitframe.units.player.fader.enable and E.db.unitframe.units.player.fader.minAlpha == 0 then
+		E:Delay(0, PEWDelayCheck)
+
+	end
+end)
+
+--flags changed fix
+local flagcheck = CreateFrame("FRAME")
+flagcheck:RegisterUnitEvent("PLAYER_FLAGS_CHANGED", "player") --model seems to update when flags are changed
+local function PlayerFlagUpdate()
+	local pAlpha = _G["ElvUF_Player"]:GetAlpha()
+	if ElvUI_EltreumUI:IsThisASafeSecret(pAlpha, true) and pAlpha == 0 then
+		if _G["EltruismPlayerEffect"] then
+			_G["EltruismPlayerEffect"]:SetAlpha(0)
+		end
+		if _G["EltruismPlayerPowerBarEffect"] then
+			_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0)
+		end
+	end
+end
+
+local function PetFlagUpdate()
+	local pAlpha = _G["ElvUF_Pet"]:GetAlpha()
+	if ElvUI_EltreumUI:IsThisASafeSecret(pAlpha, true) and pAlpha == 0 then
+		if _G["EltruismPetEffect"] then
+			_G["EltruismPetEffect"]:SetAlpha(0)
+		end
+		if _G["EltruismPetPowerBarEffect"] then
+			_G["EltruismPetPowerBarEffect"]:SetAlpha(0)
+		end
+	end
+end
+
+flagcheck:SetScript("OnEvent",function()
+	if ElvUI_EltreumUI:EncounterCheck() then return end
+	if _G["ElvUF_Player"] and E.db.unitframe.units.player.fader.enable and E.db.unitframe.units.player.fader.minAlpha == 0 then
+		E:Delay(0, PlayerFlagUpdate)
+	end
+	if _G["ElvUF_Pet"] and E.db.unitframe.units.pet.fader.enable and E.db.unitframe.units.pet.fader.minAlpha == 0 then
+		E:Delay(0, PetFlagUpdate)
 	end
 end)
 
@@ -789,7 +925,7 @@ if E.db.unitframe.units.player.fader.smooth > 0 then
 							end
 						end
 						if _G["EltruismPlayerPowerBarEffect"] then
-							if E.Retail then
+							if E.Modern then
 								_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.4)
 							else
 								_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.8)
@@ -804,7 +940,7 @@ if E.db.unitframe.units.player.fader.smooth > 0 then
 							end
 						end
 						if _G["EltruismPetPowerBarEffect"] then
-							if E.Retail then
+							if E.Modern then
 								_G["EltruismPetPowerBarEffect"]:SetAlpha(0.8)
 							else
 								_G["EltruismPetPowerBarEffect"]:SetAlpha(0.6)

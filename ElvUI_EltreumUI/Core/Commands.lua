@@ -11,9 +11,9 @@ local GetCoinIcon = _G.C_CurrencyInfo and _G.C_CurrencyInfo.GetCoinIcon or _G.Ge
 local print = _G.print
 local strlower = _G.strlower
 local C_Container= _G.C_Container
-local GetContainerNumSlots = E.Retail and C_Container.GetContainerNumSlots or _G.GetContainerNumSlots
-local GetContainerItemInfo = E.Retail and C_Container.GetContainerItemInfo or _G.GetContainerItemInfo
-local UseContainerItem = E.Retail and C_Container.UseContainerItem or _G.UseContainerItem
+local GetContainerNumSlots = E.Modern and C_Container.GetContainerNumSlots or _G.GetContainerNumSlots
+local GetContainerItemInfo = E.Modern and C_Container.GetContainerItemInfo or _G.GetContainerItemInfo
+local UseContainerItem = E.Modern and C_Container.UseContainerItem or _G.UseContainerItem
 local next = _G.next
 local SendChatMessage = _G.C_ChatInfo and _G.C_ChatInfo.SendChatMessage or _G.SendChatMessage
 local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
@@ -43,7 +43,7 @@ function ElvUI_EltreumUI:LoadCommands()
 		--E.ConfigModeLocalizedStrings["ELTREUMUI"] =
 		self.ConfigModeAddedEltruism = true
 	end
-	if E.Retail then
+	if E.Modern then
 		if E.db.ElvUI_EltreumUI.waypoints.waytext.enable then
 			if not IsAddOnLoaded("TomTom") then
 				self:RegisterChatCommand('way', 'WaypointTexttoCoordinate')
@@ -71,7 +71,7 @@ function ElvUI_EltreumUI:RunCommands(message)
 			local aSilver = GetCoinIcon(100)
 			local aCopper = GetCoinIcon(1)
 			--RaidNotice_AddMessage(RaidWarningFrame, "Raid Boss Emote Frame Raid Warning Test Message", ChatTypeInfo["RAID_WARNING"], 10)
-			if E.Retail then
+			if E.Modern then
 				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."9.999.999 Gold", _G.CombatTextUtil.StandardScroll, 255, 255, 255, nil, true)
 			elseif E.Classic or E.Mists or E.TBC or E.Wrath then
 				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."214.748 Gold |T ".. aSilver ..":22:22:0:0:64:64:5:59:5:59|t ".."36 Silver |T ".. aCopper ..":22:22:0:0:64:64:5:59:5:59|t ".."47 Copper", _G.CombatTextUtil.StandardScroll, 255, 255, 255, nil, true)
@@ -94,14 +94,6 @@ function ElvUI_EltreumUI:RunCommands(message)
 			ElvUI_EltreumUI:Print("Development Tools Disabled, please reload")
 			E:StaticPopup_Show('CONFIG_RL')
 		end
-	elseif message == 'translate' then
-		if E.db.ElvUI_EltreumUI.deepLwarning then
-			E.db.ElvUI_EltreumUI.deepLwarning = false
-			ElvUI_EltreumUI:Print("DeepL translation warning Disabled")
-		else
-			E.db.ElvUI_EltreumUI.deepLwarning = true
-			ElvUI_EltreumUI:Print("DeepL translation warning Enabled")
-		end
 	elseif message == 'chat' then
 		if not InCombatLockdown() then
 			if E.db.chat.panelBackdrop == "HIDEBOTH" then
@@ -111,6 +103,17 @@ function ElvUI_EltreumUI:RunCommands(message)
 			else
 				ElvUI_EltreumUI:TransparentChat()
 			end
+		end
+	elseif message == 'transparent' then
+		local UF = E:GetModule('UnitFrames')
+		if E.db.unitframe.colors.transparentHealth then
+			E.db.unitframe.colors.transparentHealth = false
+			UF:Update_AllFrames()
+			ElvUI_EltreumUI:Print("Unitframes transparent health disabled")
+		else
+			E.db.unitframe.colors.transparentHealth = true
+			UF:Update_AllFrames()
+			ElvUI_EltreumUI:Print("Unitframes transparent health enabled")
 		end
 	elseif message == 'color' then
 		if not InCombatLockdown() then
@@ -279,7 +282,7 @@ function ElvUI_EltreumUI:RunCommands(message)
 			ElvUI_EltreumUI:Print("Details Hiding out of Combat Disabled")
 		end
 	elseif message == 'autoadjust' then
-		if (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
+		if ElvDB.profileKeys[E.mynameRealm] and (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
 			if not E.db.ElvUI_EltreumUI.borders.borderautoadjust then
 				E.db.ElvUI_EltreumUI.borders.borderautoadjust = true
 				ElvUI_EltreumUI:Print("Borders Autoadjust enabled")
@@ -337,7 +340,7 @@ function ElvUI_EltreumUI:RunCommands(message)
 		print("|cff82B4ff/eltruism options/config|r - Opens Eltruism Config")
 		print("|cff82B4ff/eltruism setup/install|r - Opens Eltruism Installer")
 		print("|cff82B4ff/eltruism loot|r - Demonstrates the LootText")
-		if E.Retail then
+		if E.Modern then
 			if not IsAddOnLoaded("TomTom") then
 				print("|cff82B4ff/way and /waypoint|r - Sets a map waypoint with the supplied coordinates")
 			else
@@ -352,7 +355,7 @@ function ElvUI_EltreumUI:RunCommands(message)
 		print("|cff82B4ff/eltruismdebug on/off|r - Toggles debug mode")
 		print("|cff82B4ff/eltruism update|r - Resets/Updates Eltruism Settings to Eltreum's Defaults")
 		print("|cff82B4ff/eltruism detailshide|r - Toggles Details hiding out of combat")
-		if (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
+		if ElvDB.profileKeys[E.mynameRealm] and (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
 			print("|cff82B4ff/eltruism autoadjust|r - Toggles Borders automatically adjusting the layout")
 		end
 		print("|cff82B4ff/eltruism weakauras|r - Toggles actionbars to be similar to WeakAuras, will overwrite settings")

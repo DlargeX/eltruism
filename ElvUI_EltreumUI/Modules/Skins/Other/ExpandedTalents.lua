@@ -7,7 +7,7 @@ local LoadAddOn = _G.C_AddOns and _G.C_AddOns.LoadAddOn
 
 --Reskin Blizzard Talent frame
 function ElvUI_EltreumUI:ExpandedTalents()
-	if E.Retail then
+	if E.Modern then
 		EltruismExpandedTalents:RegisterEvent("ADDON_LOADED")
 		EltruismExpandedTalents:RegisterEvent("PLAYER_ENTERING_WORLD")
 		EltruismExpandedTalents:RegisterEvent("PLAYER_STARTED_MOVING")
@@ -259,7 +259,6 @@ function ElvUI_EltreumUI:ExpandedTalents()
 							_G.PlayerTalentFrame:SetScale(E.db.ElvUI_EltreumUI.skins.expandedtalentscale)
 						end
 					end
-
 
 					_G.PlayerTalentFrame:HookScript("OnShow", function()
 						ClassicTalent()

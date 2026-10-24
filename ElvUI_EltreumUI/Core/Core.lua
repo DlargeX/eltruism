@@ -6,7 +6,6 @@ local print = _G.print
 local unpack = _G.unpack
 local hooksecurefunc = _G.hooksecurefunc
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
-local DisableAddOn = _G.C_AddOns and _G.C_AddOns.DisableAddOn
 local LoadAddOn = _G.C_AddOns and _G.C_AddOns.LoadAddOn
 local GetPhysicalScreenSize = _G.GetPhysicalScreenSize
 local UIParentLoadAddOn = _G.UIParentLoadAddOn
@@ -27,7 +26,6 @@ local UIErrorsFrame = _G.UIErrorsFrame
 local RaidWarningFrame = _G.RaidWarningFrame
 local tostring = _G.tostring
 local PlaySound = _G.PlaySound
-local W
 local GetCVar = _G.C_CVar and _G.C_CVar.GetCVar or _G.GetCVar
 local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
 local format = _G.format
@@ -43,6 +41,14 @@ local GetSpellInfo = _G.C_Spell and _G.C_Spell.GetSpellInfo or _G.GetSpellInfo
 local GetShapeshiftFormInfo = _G.GetShapeshiftFormInfo
 local select = _G.select
 local type = _G.type
+local UnitClass = _G.UnitClass
+local GetActiveSpecGroup = _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetActiveSpecGroup
+local GetCombatConfigIDForSpecGroup = _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetCombatConfigIDForSpecGroup
+local GetConfigInfo = _G.C_Traits and _G.C_Traits.GetConfigInfo
+local GetGroupDisplayInfoByTreeID = _G.C_Traits and _G.C_Traits.GetGroupDisplayInfoByTreeID
+local GetGroupCurrencyInfo = _G.C_Traits and _G.C_Traits.GetGroupCurrencyInfo
+local ipairs = _G.ipairs
+local table = _G.table
 
 -- Eltreum UI print
 function ElvUI_EltreumUI:Print(msg)
@@ -51,113 +57,48 @@ function ElvUI_EltreumUI:Print(msg)
 	print(ElvUI_EltreumUI.Name..': '..msg)
 end
 
+--check on PEW, should run on all scenarios needed (but not like garrisons)
+local outside = false
+local isPvP = false
+local instanceType = "none"
+local EltruismInstanceCheck = CreateFrame("Frame")
+local cached_isInInstance = false
+EltruismInstanceCheck:RegisterEvent("PLAYER_ENTERING_WORLD")
+EltruismInstanceCheck:RegisterEvent("ZONE_CHANGED")
+EltruismInstanceCheck:SetScript("OnEvent", function()
+	cached_isInInstance, instanceType = IsInInstance()
+	isPvP = (instanceType == "pvp") or (instanceType == "arena")
+	outside = (instanceType == "none")
+end)
+function ElvUI_EltreumUI:IsInInstance(needsisPvP,needsoutside,needsBoth,needsType,blizzard)
+	if needsType then
+		return instanceType
+	elseif needsBoth then
+		return isPvP,outside
+	elseif needsisPvP then
+		return isPvP
+	elseif needsoutside then
+		return outside
+	elseif blizzard then
+		return cached_isInInstance, instanceType
+	else
+		return cached_isInInstance
+	end
+end
+
 --fix macro
 local keydown = _G.C_CVar.GetCVarBool('ActionButtonUseKeyDown')
 function ElvUI_EltreumUI:MacroClick(button)
 	button:RegisterForClicks(keydown and 'AnyDown' or 'AnyUp')
-	if E.Retail or E.TBC then
+	if E.Modern or E.TBC then
 		button:SetAttribute('useOnKeyDown', keydown)
 	end
 end
 
---set gradient using vertex color of regions of a frame
-function ElvUI_EltreumUI:ApplyGlowGradient(glowFrame, r, g, b)
-	if not glowFrame then return end
-	local numRegions = glowFrame:GetNumRegions()
-	for k = 1, numRegions do
-		local region = select(k, glowFrame:GetRegions())
-		if region and region.SetVertexColor then
-			local percentage = 1 - ((k * (100 / (numRegions + 1))) / 100)
-			region:SetVertexColor((r * percentage), (g * percentage), (b * percentage), 1)
-		end
-	end
-end
-
---hide popups during install
-function ElvUI_EltreumUI:HidePopups(delay)
-	if E:IsAddOnEnabled("ElvUI_WindTools") then
-		W = unpack(_G.WindTools)
-		local function WindtoolsCompatHideWhileInstall()
-			_G["WTCompatibilityFrame"]:Kill()
-		end
-		hooksecurefunc(W, "ConstructCompatibilityFrame", WindtoolsCompatHideWhileInstall)
-	end
-	if IsAddOnLoaded("Details_Streamer") then
-		DisableAddOn("Details_Streamer",E.myguid)
-	end
-	E:Delay(delay, function()
-		if IsAddOnLoaded("Details") and _G['_detalhes'] then
-			_G['_detalhes'].is_first_run = false
-			_G['_detalhes']:DisablePlugin ("DETAILS_PLUGIN_STREAM_OVERLAY")
-			_G['_detalhes']:DisablePlugin ("Details_Streamer")
-			_G['_detalhes']:SetTutorialCVar ("STREAMER_PLUGIN_FIRSTRUN", true)
-			if _G["DetailsWelcomeWindow"] then
-				_G["DetailsWelcomeWindow"]:Hide()
-			end
-			if _G["DetailsNewsWindow"] then
-				_G["DetailsNewsWindow"]:Hide()
-			end
-			if _G["StreamOverlayWelcomeWindow"] then
-				_G["StreamOverlayWelcomeWindow"]:Hide()
-			end
-			if _G["DetailsBaseFrame1"] then
-				_G["DetailsBaseFrame1"]:Hide()
-			end
-			if _G["DetailsProfilerProfileConfirmButton"] then
-				local a = _G["DetailsProfilerProfileConfirmButton"]:GetParent()
-				a:Hide()
-			end
-		end
-		for i = 1, 4 do
-			if _G["StaticPopup"..i] then
-				_G["StaticPopup"..i]:Hide()
-			end
-			if _G["ElvUI_StaticPopup"..i] then
-				_G["ElvUI_StaticPopup"..i]:Hide()
-			end
-		end
-		if _G["CappingFrame"] then
-			_G["CappingFrame"]:Hide()
-		end
-		if IsAddOnLoaded("GladiusEx") then
-			_G.GladiusEx:HideFrames()
-		end
-		if IsAddOnLoaded("Gladius") then
-			if _G["GladiusButtonFramearena1"] then
-				_G["GladiusButtonFramearena1"]:Hide()
-			end
-			if _G["GladiusButtonFramearena2"] then
-				_G["GladiusButtonFramearena2"]:Hide()
-			end
-			if _G["GladiusButtonFramearena3"] then
-				_G["GladiusButtonFramearena3"]:Hide()
-			end
-			if _G["GladiusButtonFramearena4"] then
-				_G["GladiusButtonFramearena4"]:Hide()
-			end
-			if _G["GladiusButtonFramearena5"] then
-				_G["GladiusButtonFramearena5"]:Hide()
-			end
-			if _G["GladiusButtonAnchor"] then
-				_G["GladiusButtonAnchor"]:Hide()
-			end
-			if _G["GladiusButtonBackground"] then
-				_G["GladiusButtonBackground"]:Hide()
-			end
-		end
-		if _G["BasicMessageDialog"] then
-			_G["BasicMessageDialog"]:Hide()
-		end
-		if IsAddOnLoaded("Gladdy") then
-			LibStub("AceConfigDialog-3.0"):Close("Gladdy") --using E.Libs seems delayed
-		end
-		if _G["SubscriptionInterstitialFrame"] then --hide the f2p popup during install
-			--_G["SubscriptionInterstitialFrame"]:Hide()
-			_G["SubscriptionInterstitialFrame"].ClosePanelButton:Click() --click instead since hide does some weird things
-		end
-		--hide elvui config
-		E.Libs.AceConfigDialog:Close("ElvUI")
-	end)
+--register for ElvUI_CPU
+if IsAddOnLoaded("ElvUI_CPU") then
+	_G.ElvUI_CPU:RegisterPlugin(ElvUI_EltreumUI)
+	--ElvUIDev:RegisterPluginModule("ElvUI_EltreumUI", moduleName, module)
 end
 
 --Resolution check for font outline
@@ -196,7 +137,7 @@ function ElvUI_EltreumUI:BlizzCombatText()
 			SetCVar("floatingCombatTextCombatHealingAbsorbSelf", 0)
 			SetCVar("floatingCombatTextCombatHealingAbsorbTarget", 0)
 			SetCVar("floatingCombatTextCombatDamage", 0)
-			if E.Retail then
+			if E.Modern then
 				SetCVar("floatingCombatTextCombatDamage_v2", 0)
 			end
 		elseif E.db.ElvUI_EltreumUI.otherstuff.blizzcombatmana then
@@ -216,7 +157,7 @@ function ElvUI_EltreumUI:RestoreBlizzCombatText()
 		SetCVar("floatingCombatTextCombatDamage", 1)
 		SetCVar("floatingCombatTextEnergyGains", 1)
 
-		if E.Retail then
+		if E.Modern then
 			SetCVar("floatingCombatTextCombatDamage_v2", 1)
 			SetCVar("floatingCombatTextCombatLogPeriodicSpells_v2", 1)
 			SetCVar("floatingCombatTextPetMeleeDamage_v2", 1)
@@ -306,7 +247,7 @@ end
 local EltreumWAAnchor
 local EltreumWAAnchor2
 local EltruismWAConsumablesAnchor
-if not E.Retail then
+if not E.Modern then
 	EltreumWAAnchor = CreateFrame("Frame", "EltruismWA", E.UIParent)
 	EltreumWAAnchor:SetPoint("CENTER", E.UIParent, "CENTER", 0, -380)
 	EltreumWAAnchor2 = CreateFrame("Frame", "EltruismWA2", E.UIParent)
@@ -323,7 +264,7 @@ EltreumArcheologyAnchor:SetSize(200, 50)
 function ElvUI_EltreumUI:Anchors()
 	if E.private.unitframe.enable then
 
-		if not E.Retail then
+		if not E.Modern then
 			--Anchor for general weakauras, like those that replace actionbars
 			EltreumWAAnchor:SetParent(_G["ElvUF_Player"])
 			EltreumWAAnchor:SetFrameStrata("BACKGROUND")
@@ -396,7 +337,7 @@ function ElvUI_EltreumUI:Anchors()
 		_G.ZoneTextFrame:UnregisterAllEvents()
 	end
 
-	if E.Retail then
+	if E.Modern then
 		if _G.RaidBossEmoteFrame then
 			E:CreateMover(_G.RaidBossEmoteFrame, "MoverRaidBossEmoteFrame", "Raid/Boss Emote Frame", nil, nil, nil, "ALL,SOLO,ELTREUMUI")
 		end
@@ -420,7 +361,7 @@ function ElvUI_EltreumUI:Anchors()
 		if _G.EventToastManagerFrame then
 			_G.EventToastManagerFrame:UnregisterAllEvents()
 		end
-		if E.Retail and _G.ChallengeModeCompleteBanner then
+		if E.Modern and _G.ChallengeModeCompleteBanner then
 			_G.ChallengeModeCompleteBanner:UnregisterAllEvents()
 		end
 	end
@@ -434,7 +375,7 @@ end
 
 --Set some CVars when entering world
 function ElvUI_EltreumUI:EnteringWorldCVars()
-	if E.Retail then
+	if E.Modern then
 		SetCVar("nameplatePlayerMaxDistance", 60)
 	end
 	SetCVar('nameplateOtherBottomInset', E.db.ElvUI_EltreumUI.cvars.nameplateOtherBottomInset)
@@ -443,7 +384,7 @@ function ElvUI_EltreumUI:EnteringWorldCVars()
 	SetCVar('nameplateTargetRadialPosition', E.db.ElvUI_EltreumUI.cvars.nameplateTargetRadialPosition)
 	SetCVar('nameplateOccludedAlphaMult', E.db.ElvUI_EltreumUI.cvars.nameplateOccludedAlphaMult)
 	SetCVar('DynamicRenderScaleMin', E.db.ElvUI_EltreumUI.cvars.dynamicrenderscalemin)
-	if E.Retail and E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.enable then
+	if E.Modern and E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.enable then
 		SetCVar('showInGameNavigation', E.db.ElvUI_EltreumUI.cvars.showInGameNavigation)
 	elseif E.Classic or E.Mists or E.TBC or E.Wrath then
 		SetCVar('clampTargetNameplateToScreen', E.db.ElvUI_EltreumUI.cvars.clampTargetNameplateToScreen)
@@ -473,7 +414,7 @@ function ElvUI_EltreumUI:DevTools()
 			_G.EventTrace.LogEvent = LogEvent
 		end
 
-		if not E.Retail and _G.EventTrace then
+		if not E.Modern and _G.EventTrace then
 			OnEventTraceLoaded()
 		else
 			local frame = CreateFrame("Frame")
@@ -483,7 +424,7 @@ function ElvUI_EltreumUI:DevTools()
 					ElvUI_EltreumUI:Print("Addon Loaded: "..arg)
 				end
 				if arg == "Blizzard_EventTrace" then
-					if not E.Retail then
+					if not E.Modern then
 						OnEventTraceLoaded()
 					end
 					if not IsAddOnLoaded("Blizzard_DebugTools") then
@@ -621,7 +562,7 @@ do
 			hooksecurefunc(StaticPopupDialogs.DELETE_GOOD_ITEM,"OnShow",TypeDelete) --Interface/FrameXML/StaticPopup.lua line 1965/2074
 			hooksecurefunc(StaticPopupDialogs.DELETE_GOOD_QUEST_ITEM,"OnShow",TypeDelete) --Interface/FrameXML/StaticPopup.lua line 2125
 
-			if E.Retail then
+			if E.Modern then
 				petdetect:RegisterEvent("DELETE_ITEM_CONFIRM")
 				petdetect:SetScript("OnEvent", function(_,_,deletetype)
 					if deletetype == "Pet Cage" then
@@ -636,138 +577,99 @@ do
 end
 
 --from elvui api, add button to game menu
---local EltruismMenuButton = CreateFrame('Button', nil, GameMenuFrame, 'GameMenuButtonTemplate')
---local isMenuExpanded = false
+local offset = E.Modern and 36 or 19
+function ElvUI_EltreumUI:AddGameMenuButton()
+	if E.Modern then
+		GameMenuFrame.Eltruism:SetPoint("CENTER", _G.GameMenuFrame, "TOP", 0, -50)
+	else
+		GameMenuFrame.Eltruism:SetPoint("CENTER", _G.GameMenuFrame, "TOP", 0, -35)
+	end
+
+	local EditModeButton
+	if GameMenuFrame.buttonPool then
+		for button in GameMenuFrame.buttonPool:EnumerateActive() do
+			if button.layoutIndex then
+				local point, anchor, point2, x, y = button:GetPoint()
+				if button.layoutIndex == 1 then
+					button:ClearAllPoints()
+					button:SetPoint("TOP", GameMenuFrame.Eltruism, "BOTTOM", 0, 0)
+				else
+					button:SetPoint(point, anchor, point2, x, y - offset)
+				end
+			end
+			if button:GetText() == _G.HUD_EDIT_MODE_MENU then
+				EditModeButton = button
+			end
+		end
+	end
+
+	--local originalMenuHeight = GameMenuFrame:GetHeight() --this gives 538 so,
+	if E.Retail then
+		GameMenuFrame:Height(538 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
+	elseif E.Forever then
+		GameMenuFrame:Height(456 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
+	else
+		GameMenuFrame:Height(320 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
+	end
+
+	--use elvui moveui instead of blizzard edit mode
+	--local EditModeButton = _G.GameMenuFrame.MenuButtons and _G.GameMenuFrame.MenuButtons[_G.HUD_EDIT_MODE_MENU]
+	if EditModeButton and not EditModeButton.EltruismHooked then
+		EditModeButton.EltruismHooked = true
+		ElvUI_EltreumUI:MacroClick(EditModeButton)
+
+		EditModeButton:SetScript("OnClick", function(_, button)
+			if not InCombatLockdown() then
+				if button == "LeftButton" then
+					E:ToggleMoveMode()
+					HideUIPanel(_G["GameMenuFrame"])
+				else
+					PlaySound(SOUNDKIT.IG_MAINMENU_OPTION)
+					ShowUIPanel(EditModeManagerFrame)
+				end
+			end
+		end)
+		EditModeButton:HookScript("OnEnter", function()
+			_G["GameTooltip"]:SetOwner(EditModeButton, 'ANCHOR_RIGHT')
+			_G["GameTooltip"]:AddDoubleLine(L["Left Click:"], L["Toggle ElvUI Anchors"], 1, 1, 1)
+			_G["GameTooltip"]:AddDoubleLine(L["Right Click:"], L["Toggle Edit Mode"], 1, 1, 1)
+			_G["GameTooltip"]:Show()
+		end)
+		EditModeButton:HookScript("OnLeave", function()
+			_G["GameTooltip"]:Hide()
+		end)
+	end
+end
+
 local EltruismGameMenu = CreateFrame("Frame")
 EltruismGameMenu:RegisterEvent("PLAYER_ENTERING_WORLD")
 EltruismGameMenu:SetScript("OnEvent", function()
 	if E.db.ElvUI_EltreumUI.otherstuff.gamemenu then
-		--if not E.Classic then
-			--local EM = E:GetModule('EditorMode')
-			local Menubutton
-			if not _G["EltruismGameMenu"] then
-				Menubutton = CreateFrame('Button', 'EltruismGameMenu', GameMenuFrame, 'MainMenuFrameButtonTemplate')
-				Menubutton:SetScript('OnClick', function()
-					if InCombatLockdown() then return end
-					E:ToggleOptions()
-					E.Libs['AceConfigDialog']:SelectGroup('ElvUI', 'ElvUI_EltreumUI') --if the old way it would always open on load
-					HideUIPanel(_G.GameMenuFrame)
-				end)
-				Menubutton:SetText("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\tinylogo.tga:12:12:0:0:64:64|t".. ElvUI_EltreumUI.Name)
-				S:HandleButton(Menubutton,nil,nil,nil,true)
+		local Menubutton
+		if not _G["EltruismGameMenu"] then
+			Menubutton = CreateFrame('Button', 'EltruismGameMenu', GameMenuFrame, 'MainMenuFrameButtonTemplate')
+			Menubutton:SetScript('OnClick', function()
+				if InCombatLockdown() then return end
+				E:ToggleOptions()
+				E.Libs['AceConfigDialog']:SelectGroup('ElvUI', 'ElvUI_EltreumUI') --if the old way it would always open on load
+				HideUIPanel(_G.GameMenuFrame)
+			end)
+			Menubutton:SetText("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\tinylogo.tga:12:12:0:0:64:64|t".. ElvUI_EltreumUI.Name)
+			S:HandleButton(Menubutton,nil,nil,nil,true)
 
-				local offset = E.Retail and 36 or 19
-				local xMenubutton = _G.GameMenuFrame:GetSize()
-				if E.Retail then
-					Menubutton:Size(xMenubutton-62, offset)
-				else
-					Menubutton:Size(xMenubutton-118, offset)
-				end
-				GameMenuFrame.Eltruism = Menubutton
-
-				if not GameMenuFrame.EltruismHook then
-					hooksecurefunc(GameMenuFrame, 'Layout', function()
-						if E.Retail then
-							GameMenuFrame.Eltruism:SetPoint("CENTER", _G.GameMenuFrame, "TOP", 0, -50)
-						else
-							GameMenuFrame.Eltruism:SetPoint("CENTER", _G.GameMenuFrame, "TOP", 0, -35)
-						end
-
-						local EditModeButton
-						for button in GameMenuFrame.buttonPool:EnumerateActive() do
-							if button.layoutIndex then
-								local point, anchor, point2, x, y = button:GetPoint()
-								if button.layoutIndex == 1 then
-									button:ClearAllPoints()
-									button:SetPoint("TOP", GameMenuFrame.Eltruism, "BOTTOM", 0, 0)
-								else
-									button:SetPoint(point, anchor, point2, x, y - offset)
-								end
-							end
-							if button:GetText() == _G.HUD_EDIT_MODE_MENU then
-								EditModeButton = button
-							end
-						end
-
-						--local originalMenuHeight = GameMenuFrame:GetHeight() --this gives 538 so,
-						if E.Retail then
-							GameMenuFrame:Height(538 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
-						else
-							GameMenuFrame:Height(320 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
-						end
-
-						--use elvui moveui instead of blizzard edit mode
-						--local EditModeButton = _G.GameMenuFrame.MenuButtons and _G.GameMenuFrame.MenuButtons[_G.HUD_EDIT_MODE_MENU]
-						if EditModeButton then
-							ElvUI_EltreumUI:MacroClick(EditModeButton)
-
-							if not EditModeButton.EltruismClickHooks then
-								EditModeButton:SetScript("OnClick", function(_, button)
-									if not InCombatLockdown() then
-										if button == "LeftButton" then
-											E:ToggleMoveMode()
-											HideUIPanel(_G["GameMenuFrame"])
-										else
-											PlaySound(SOUNDKIT.IG_MAINMENU_OPTION)
-											ShowUIPanel(EditModeManagerFrame)
-										end
-									end
-								end)
-								EditModeButton:HookScript("OnEnter", function()
-									_G["GameTooltip"]:SetOwner(EditModeButton, 'ANCHOR_RIGHT')
-									_G["GameTooltip"]:AddDoubleLine(L["Left Click:"], L["Toggle ElvUI Anchors"], 1, 1, 1)
-									_G["GameTooltip"]:AddDoubleLine(L["Right Click:"], L["Toggle Edit Mode"], 1, 1, 1)
-									_G["GameTooltip"]:Show()
-								end)
-								EditModeButton:HookScript("OnLeave", function()
-									_G["GameTooltip"]:Hide()
-								end)
-								EditModeButton.EltruismClickHooks = true
-							end
-						end
-					end)
-					GameMenuFrame.EltruismHook = true
-				end
+			local xMenubutton = _G.GameMenuFrame:GetSize()
+			if E.Modern then
+				Menubutton:Size(xMenubutton-62, offset)
+			else
+				Menubutton:Size(xMenubutton-118, offset)
 			end
-		--[[else
-			if not isMenuExpanded then
-				EltruismMenuButton:SetText("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\tinylogo.tga:12:12:0:0:64:64|t".. ElvUI_EltreumUI.Name) --new 64x64 icon
-				S:HandleButton(EltruismMenuButton)
-				local x, y = _G["GameMenuButtonLogout"]:GetSize()
-				EltruismMenuButton:SetSize(x,y)
-				EltruismMenuButton:SetScript("OnClick", function()
-					if not InCombatLockdown() then
-						E:ToggleOptions("ElvUI_EltreumUI")
-						--E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'ElvUI_EltreumUI')
-						HideUIPanel(_G["GameMenuFrame"])
-					end
-				end)
+			GameMenuFrame.Eltruism = Menubutton
 
-				hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', function ()
-					if GameMenuFrame.ElvUI then
-						EltruismMenuButton:Point("TOP", GameMenuFrame.ElvUI, "BOTTOM", 0, -1)
-					else
-						EltruismMenuButton:Point("TOP", _G.GameMenuButtonAddons, "BOTTOM", 0, -1)
-					end
-					if _G["GameMenu_SLEConfig"] and not _G["GameMenuReloadUI"] and not _G.TXUI_GAME_BUTTON then
-						EltruismMenuButton:Point("TOP", _G["GameMenu_SLEConfig"], "BOTTOM", 0, -1)
-					elseif _G["GameMenuReloadUI"] and not _G.TXUI_GAME_BUTTON then
-						EltruismMenuButton:Point("TOP", _G["GameMenuReloadUI"], "BOTTOM", 0, -1)
-					elseif _G.TXUI_GAME_BUTTON then
-						EltruismMenuButton:Point("TOP", _G.TXUI_GAME_BUTTON, "BOTTOM", 0, -1)
-					elseif _G["GameMenuFrame"].GameMenu_TXUI then
-						EltruismMenuButton:Point("TOP", _G["GameMenuFrame"].GameMenu_TXUI, "BOTTOM", 0, -1)
-					end
-				end)
-
-				_G["GameMenuFrame"]:HookScript("OnShow", function()
-					_G["GameMenuButtonLogout"]:ClearAllPoints()
-					_G["GameMenuButtonLogout"]:SetPoint("TOP", EltruismMenuButton, "BOTTOM", 0, -y)
-					_G["GameMenuFrame"]:SetHeight(_G["GameMenuFrame"]:GetHeight() + _G["GameMenuButtonLogout"]:GetHeight() + 4)
-				end)
-				isMenuExpanded = true
+			if GameMenuFrame.Layout and not GameMenuFrame.EltruismHook then
+				ElvUI_EltreumUI:SecureHook(GameMenuFrame, 'Layout', 'AddGameMenuButton')
+				GameMenuFrame.EltruismHook = true
 			end
-		end]]
+		end
 	end
 end)
 
@@ -892,20 +794,6 @@ function ElvUI_EltreumUI:ReforgedCheck(setting)
 	return false
 end
 
---check for blinkii's kick on cd function
-function ElvUI_EltreumUI:CheckmMediaTagInterrupt()
-	--its secret so its always false
-	--[[if IsAddOnLoaded("ElvUI_mMediaTag") and E.Retail then
-		if (E.db.mMediaTag and E.db.mMT.interrupt_on_cd and E.db.mMT.interrupt_on_cd.enable) then
-			return _G.mMT:mMediaTag_interruptOnCD() or false
-		else
-			return false
-		end
-	else]]
-		return false
-	--end
-end
-
 function ElvUI_EltreumUI:SpellInfoShapeshift(spellID,ShapeshiftFormID)
 	if ShapeshiftFormID then
 		if GetShapeshiftFormInfo(1) then
@@ -962,7 +850,8 @@ end
 
 do
 	local shortenReplace = function(t) return t:utf8sub(1,1)..'. ' end
-	function ElvUI_EltreumUI:ShortenString(text, length, cut,firstname)
+	local shortenSuffix = function(t) return t:utf8sub(1,1)..'.' end
+	function ElvUI_EltreumUI:ShortenString(text, length, cut, firstname, isPlayer)
 		if not ElvUI_EltreumUI:IsThisASafeSecret(text,true) then
 			return text
 		else
@@ -970,7 +859,14 @@ do
 				if cut then
 					text = E:ShortenString(text,length)
 				else
-					if firstname then
+					if E.Forever and isPlayer then
+						local first, last = text:match('^(%a*)(.*)$')
+						if first and last then
+							text = first.." "..last:gsub('(%S+)', shortenSuffix)
+						else
+							text = text:gsub('(%S+) ', shortenReplace)
+						end
+					elseif firstname then
 						local first, last = text:match('^(%a*)(.*)$')
 						if first and last then
 							text = first.." "..last:gsub('(%S+)', shortenReplace)
@@ -987,10 +883,14 @@ do
 	end
 end
 
---10.1 addon compartment
-function ElvUI_EltreumUI_OnAddonCompartmentClick()
-	E:ToggleOptions("ElvUI_EltreumUI") --has msg arg which can be used
-	--E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'ElvUI_EltreumUI')
+--addon compartment
+do
+	function ElvUI_EltreumUI:OnAddonCompartmentClick()
+		E:ToggleOptions("ElvUI_EltreumUI") --has msg arg which can be used
+		--E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'ElvUI_EltreumUI')
+	end
+
+	_G.ElvUI_EltreumUI_OnAddonCompartmentClick = ElvUI_EltreumUI.OnAddonCompartmentClick
 end
 
 function ElvUI_EltreumUI:FontFlag(style)
@@ -1007,10 +907,10 @@ end
 --from oUF
 local GenerateTextColorCode = _G.C_ColorUtil and _G.C_ColorUtil.GenerateTextColorCode
 function ElvUI_EltreumUI:Hex(r, g, b)
-	if not r or type(r) == 'string' then -- wtf?
+	if not r or type(r) == 'string' then
 		return '|cffFFFFFF'
 	elseif type(r) == 'table' then
-		if E.Retail then
+		if E.Modern then
 			return '|c' .. GenerateTextColorCode(r)
 		elseif(r.r) then
 			r, g, b = r.r, r.g, r.b
@@ -1024,10 +924,9 @@ end
 --make mage and warlock use their original class colors
 function ElvUI_EltreumUI:OriginalClassColors()
 	--_G.RAID_CLASS_COLORS can cause issues inside instances if friendly nameplates are enabled, so check for that
-	local inInstance = IsInInstance()
 	local canTouchRaidClassColors
 	local mapID = _G.WorldMapFrame:GetMapID()
-	if not inInstance and not (mapID == 1662 or mapID == 582 or mapID == 590) then
+	if not cached_isInInstance and not (mapID == 1662 or mapID == 582 or mapID == 590) then
 		canTouchRaidClassColors = true
 	else
 		if tonumber(GetCVar('nameplateShowFriends')) == 0 then
@@ -1038,7 +937,7 @@ function ElvUI_EltreumUI:OriginalClassColors()
 	end
 
 	if E.db.ElvUI_EltreumUI.skins.oldclasscolors then
-		if canTouchRaidClassColors and not inInstance then
+		if canTouchRaidClassColors and not cached_isInInstance then
 			_G.RAID_CLASS_COLORS['MAGE']["r"] = 0.41
 			_G.RAID_CLASS_COLORS['MAGE']["g"] = 0.8
 			_G.RAID_CLASS_COLORS['MAGE']["b"] = 0.94
@@ -1051,7 +950,7 @@ function ElvUI_EltreumUI:OriginalClassColors()
 		E.oUF.colors.class['MAGE']["g"] = 0.8
 		E.oUF.colors.class['MAGE']["b"] = 0.94
 
-		if canTouchRaidClassColors and not inInstance then
+		if canTouchRaidClassColors and not cached_isInInstance then
 			_G.RAID_CLASS_COLORS['WARLOCK']["r"] = 0.58
 			_G.RAID_CLASS_COLORS['WARLOCK']["g"] = 0.51
 			_G.RAID_CLASS_COLORS['WARLOCK']["b"] = 0.79
@@ -1068,7 +967,7 @@ function ElvUI_EltreumUI:OriginalClassColors()
 	--make shamans blue again in classic
 	if E.Classic then
 		if E.db.ElvUI_EltreumUI.skins.classicblueshaman then
-			if canTouchRaidClassColors and not inInstance then
+			if canTouchRaidClassColors and not cached_isInInstance then
 				_G.RAID_CLASS_COLORS['SHAMAN']["r"] = 0.00
 				_G.RAID_CLASS_COLORS['SHAMAN']["g"] = 0.44
 				_G.RAID_CLASS_COLORS['SHAMAN']["b"] = 0.87
@@ -1132,6 +1031,105 @@ if pickerWheel and _G.ColorPickerFrame then
 	pickerWheel:AddMaskTexture(bettermask)
 end
 
+--because forever is a bit special with their specs
+local CLASS_TREE_TO_SPEC_ID = {
+	[1]  = { -- Warrior:
+		[1] = 71, --Arms
+		[2] = 72, --Fury
+		[3] = 73, --Protection
+	},
+	[2]  = { -- Paladin:
+		[1] = 65, --Holy
+		[2] = 66, --Protection
+		[3] = 70, --Retribution
+	},
+	[3]  = { -- Hunter:
+		[1] = 253, --Beast Mastery
+		[2] = 254, --Marksmanship
+		[3] = 255, --Survival
+	},
+	[4]  = { -- Rogue
+		[1] = 259, --Assassination
+		[2] = 260, --Combat
+		[3] = 261, --Subtlety
+	},
+	[5]  = { -- Priest
+		[1] = 256, --Discipline
+		[2] = 257, --Holy
+		[3] = 258, --Shadow
+	},
+	[7]  = { -- Shaman
+		[1] = 262, --Elemental
+		[2] = 263, --Enhancement
+		[3] = 264, --Restoration
+	},
+	[8]  = { -- Mage
+		[1] = 62, --Arcane
+		[2] = 63, --Fire
+		[3] = 64, --Frost
+	},
+	[9]  = { -- Warlock
+		[1] = 265, --Affliction
+		[2] = 266, --Demonology
+		[3] = 267, --Destruction
+	},
+	[11] = { -- Druid
+		[1] = 102, --Balance
+		[2] = 103, --Feral
+		[3] = 105, --Restoration
+	},
+}
+function ElvUI_EltreumUI:CheckForeverSpec()
+	local _, _, classID = UnitClass("player")
+	local activeGroup = GetActiveSpecGroup() or 1
+	local configID = GetCombatConfigIDForSpecGroup(activeGroup)
+	if not configID then return nil, nil, 0, 0, 0 end
+
+	local configInfo = GetConfigInfo(configID)
+	local treeID = configInfo and configInfo.treeIDs and configInfo.treeIDs[1]
+	if not treeID then return nil, nil, 0, 0, 0 end
+
+	local displayInfos = GetGroupDisplayInfoByTreeID(treeID)
+	if not displayInfos or #displayInfos == 0 then return nil, nil, 0, 0, 0 end
+
+	local groupIDs = {}
+	for _, info in ipairs(displayInfos) do
+		table.insert(groupIDs, info.groupID)
+	end
+	local groupCurrencyInfos = GetGroupCurrencyInfo(configID, groupIDs)
+	local currencyByGroup = {}
+	if groupCurrencyInfos then
+		for _, curr in ipairs(groupCurrencyInfos) do
+			currencyByGroup[curr.traitNodeGroupID] = curr.currencyInfos[1] and curr.currencyInfos[1].spent or 0
+		end
+	end
+
+	local spent1 = (displayInfos[1] and currencyByGroup[displayInfos[1].groupID]) or 0
+	local spent2 = (displayInfos[2] and currencyByGroup[displayInfos[2].groupID]) or 0
+	local spent3 = (displayInfos[3] and currencyByGroup[displayInfos[3].groupID]) or 0
+	local dominantIndex = 0
+	local dominantName = ""
+
+	if spent1 > spent2 and spent1 > spent3 then
+		dominantIndex = 1
+	elseif spent2 > spent1 and spent2 > spent3 then
+		dominantIndex = 2
+	elseif spent3 > spent1 and spent3 > spent2 then
+		dominantIndex = 3
+	end
+
+	if dominantIndex > 0 and displayInfos[dominantIndex] then
+		dominantName = displayInfos[dominantIndex].displayName or ""
+	end
+
+	local specID = 0
+	if dominantIndex > 0 and CLASS_TREE_TO_SPEC_ID[classID] and CLASS_TREE_TO_SPEC_ID[classID][dominantIndex] then
+		specID = CLASS_TREE_TO_SPEC_ID[classID][dominantIndex]
+	end
+
+	return specID, dominantName, spent1, spent2, spent3
+end
+
 --cursor positioning with 60 FPS throttle
 local GetCursorPosition = _G.GetCursorPosition
 local GetTime = _G.GetTime
@@ -1173,19 +1171,26 @@ function ElvUI_EltreumUI:UpdateCursorPosition(frame, elapsed, force)
 	end
 end
 
-function ElvUI_EltreumUI:IsThisASafeSecret(value,hasValue,isBG)
-	if not E.Modern then
-		return true
+--cache unit..'target' to avoid calling it again and again
+local targetUnitCache = {}
+function ElvUI_EltreumUI:GetTargetUnit(unit)
+	if not targetUnitCache[unit] then
+		targetUnitCache[unit] = unit .. 'target'
 	end
+	return targetUnitCache[unit]
+end
 
+local isModern = E.Modern
+local canaccessvalue = _G.canaccessvalue
+function ElvUI_EltreumUI:IsThisASafeSecret(value, hasValue, isBG)
 	if hasValue then
-		return E:CanAccessValue(value) --new api to check if value is secret
-	else
-		local _, instanceType = IsInInstance()
+		return canaccessvalue(value)
+	elseif isModern then
 		if isBG then
-			return instanceType ~= "pvp" and instanceType ~= "arena"
+			return not isPvP
 		else
-			return instanceType == "none"
+			return outside
 		end
 	end
+	return true
 end

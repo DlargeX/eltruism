@@ -7,6 +7,8 @@ local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
 local math = _G.math
 local mathceil = math.ceil
 local GetPhysicalScreenSize = _G.GetPhysicalScreenSize
+local type = _G.type
+local GetCVarDefault = _G.C_CVar and _G.C_CVar.GetCVarDefault or _G.GetCVarDefault
 
 function ElvUI_EltreumUI:SetupGeneralLayout()
 	if not E.db.movers then E.db.movers = {} end
@@ -29,20 +31,9 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	--make Aura Filters use Textured Icons
 	ElvUI_EltreumUI:AuraFiltersUpdate()
 
-	-- ProjectAzilroka Profile
-	ElvUI_EltreumUI:AddonSetupPA()
-
-	-- AddOnSkins Profile
-	ElvUI_EltreumUI:AddonSetupAS()
-
 	--SetupShadowAndLight
 	if IsAddOnLoaded("ElvUI_SLE") then
 		ElvUI_EltreumUI:GetSLEProfile()
-	end
-
-	if IsAddOnLoaded("ProjectAzilroka") then
-		--E.db["movers"]["SquareMinimapButtonBarMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-5,-226"
-		E.db["movers"]["SquareMinimapButtonBarMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-6,-205"
 	end
 
 	if IsAddOnLoaded("ElvUI_WindTools") then
@@ -82,6 +73,9 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["tooltip"]["role"] = false --was true
 	E.db["tooltip"]["targetInfo"] = false --was true
 	E.db["tooltip"]["showMount"] = false --was true
+
+	--modern show class colors
+	E.db["nameplates"]["classColorNames"] = true
 
 	--to make sure its correct height
 	E.db["unitframe"]["units"]["player"]["height"] = 54
@@ -160,7 +154,20 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["bags"]["spinner"]["color"]["b"] = valuecolors.b
 
 	--paging
-	if E.Retail or E.Mists or E.TBC or E.Wrath then
+	if E.Classic then
+		E.db["actionbar"]["bar4"]["paging"]["DEATHKNIGHT"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["DEMONHUNTER"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["DRUID"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["HUNTER"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["MAGE"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["MONK"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["PALADIN"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["ROGUE"] = "[bonusbar:1] 7;[bonusbar:1,nostealth] 4; [bonusbar:1,stealth] 7; [vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:2] 8;[bonusbar:5] 11;" --other other besides this was causing problems with shadow dance
+		E.db["actionbar"]["bar4"]["paging"]["SHAMAN"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["WARLOCK"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[form:1] 7;[bonusbar:5] 11;"
+		E.db["actionbar"]["bar4"]["paging"]["WARRIOR"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11; [stance:1] 7; [stance:2] 8; [stance:3] 9;"
+		E.db["actionbar"]["bar4"]["paging"]["PRIEST"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 16;[bonusbar:5] 11; [stance:1] 7;"
+	else
 		E.db["actionbar"]["bar4"]["paging"]["DEATHKNIGHT"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 		E.db["actionbar"]["bar4"]["paging"]["DEMONHUNTER"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 		E.db["actionbar"]["bar4"]["paging"]["DRUID"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
@@ -174,19 +181,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 		E.db["actionbar"]["bar4"]["paging"]["WARLOCK"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 		E.db["actionbar"]["bar4"]["paging"]["WARRIOR"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;[stance:1] 7; [stance:2] 8; [stance:3] 9;"
 		E.db["actionbar"]["bar4"]["paging"]["EVOKER"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16;[bonusbar:5] 11;[bonusbar:1] 7;"
-	else
-		E.db["actionbar"]["bar4"]["paging"]["DEATHKNIGHT"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["DEMONHUNTER"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["DRUID"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["HUNTER"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["MAGE"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["MONK"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["PALADIN"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["ROGUE"] = "[bonusbar:1] 7;[bonusbar:1,nostealth] 4; [bonusbar:1,stealth] 7; [vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:2] 8;[bonusbar:5] 11;" --other other besides this was causing problems with shadow dance
-		E.db["actionbar"]["bar4"]["paging"]["SHAMAN"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 12;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["WARLOCK"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[form:1] 7;[bonusbar:5] 11;"
-		E.db["actionbar"]["bar4"]["paging"]["WARRIOR"] = "[vehicleui] 12; [overridebar] 14;[possessbar] 12;[bonusbar:5] 11; [stance:1] 7; [stance:2] 8; [stance:3] 9;"
-		E.db["actionbar"]["bar4"]["paging"]["PRIEST"] = "[vehicleui] 12; [overridebar] 14; [possessbar] 16;[bonusbar:5] 11; [stance:1] 7;"
 	end
 
 	--aura filtering
@@ -304,7 +298,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["general"]["fonts"]["talkingtitle"]["size"] = 20
 	E.db["general"]["itemLevel"]["totalLevelFont"] = "Kimberley"
 	E.db["general"]["itemLevel"]["totalLevelFontOutline"] = "OUTLINE"
-	E.db["general"]["itemLevel"]["totalLevelFontSize"] = E.Retail and 22 or 12
+	E.db["general"]["itemLevel"]["totalLevelFontSize"] = E.Modern and 22 or 12
 	E.db["general"]["itemLevel"]["enchantAbbrev"] = true
 	E.db["general"]["itemLevel"]["showItemLevel"] = true
 	E.db["general"]["itemLevel"]["showEnchants"] = true
@@ -390,9 +384,27 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["unitframe"]["units"]["pettarget"]["buffs"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["pettarget"]["buffs"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["pettarget"]["buffs"]["tooltipAnchorY"] = 0
+
 	E.db["unitframe"]["units"]["player"]["aurabar"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["player"]["aurabar"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["player"]["aurabar"]["tooltipAnchorY"] = 0
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group1"]["enable"] = true
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group1"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group2"]["enable"] = false
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group2"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group3"]["enable"] = false
+	E.db["unitframe"]["units"]["player"]["aurabar"]["friendlyFilter"]["filterLists"]["group3"]["maxDuration"] = 300
+
+	---aurabar filter for retail
+	--[[E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraBigDefensive"] = true
+	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraDefensive"] = true
+	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraImportant"] = true
+	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraRaid"] = false
+]]
+
+	--hide permanent auras
+	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraPermanentPlayer"] = true
+
 	E.db["unitframe"]["units"]["player"]["auras"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["player"]["auras"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["player"]["auras"]["tooltipAnchorY"] = 0
@@ -450,6 +462,27 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["unitframe"]["units"]["target"]["aurabar"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["target"]["aurabar"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["target"]["aurabar"]["tooltipAnchorY"] = 0
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group1"]["enable"] = true
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group1"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group1"]["filter"] = 'HARMFUL|PLAYER|INCLUDE_NAME_PLATE_ONLY|!CROWD_CONTROL'
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group2"]["enable"] = false
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group2"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group3"]["enable"] = false
+	E.db["unitframe"]["units"]["target"]["aurabar"]["enemyFilter"]["filterLists"]["group3"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["target"]["aurabar"]["friendlyFilter"]["filterLists"]["group1"]["enable"] = true
+	E.db["unitframe"]["units"]["target"]["aurabar"]["friendlyFilter"]["filterLists"]["group1"]["maxDuration"] = 300
+	E.db["unitframe"]["units"]["target"]["aurabar"]["friendlyFilter"]["filterLists"]["group1"]["filter"] = 'HELPFUL|PLAYER'
+
+	---aurabar filter for retail
+	--[[E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraBigDefensive"] = true
+	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraCrowdControl"] = true
+	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraImportant"] = true
+	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraRaid"] = false
+	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraRaidPlayerDispellable"] = true]]
+
+	--hide permanent auras
+	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraPermanentPlayer"] = true
+
 	E.db["unitframe"]["units"]["target"]["auras"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["target"]["auras"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["target"]["auras"]["tooltipAnchorY"] = 0
@@ -477,22 +510,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["unitframe"]["units"]["targettargettarget"]["debuffs"]["tooltipAnchorType"] = "ANCHOR_CURSOR"
 	E.db["unitframe"]["units"]["targettargettarget"]["debuffs"]["tooltipAnchorX"] = 0
 	E.db["unitframe"]["units"]["targettargettarget"]["debuffs"]["tooltipAnchorY"] = 0
-
-	---aurabar filter for retail
-	--[[E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraBigDefensive"] = true
-	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraDefensive"] = true
-	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraImportant"] = true
-	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraRaid"] = false
-
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraBigDefensive"] = true
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraCrowdControl"] = true
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraImportant"] = true
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraRaid"] = false
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraRaidPlayerDispellable"] = true]]
-
-	--hide permanent auras
-	E.db["unitframe"]["units"]["player"]["aurabar"]["isAuraPermanentPlayer"] = true
-	E.db["unitframe"]["units"]["target"]["aurabar"]["isAuraPermanentPlayer"] = true
 
 	-- unitframe colors
 	E.db["unitframe"]["colors"]["auraBarBuff"]["b"] = valuecolors.b
@@ -664,7 +681,8 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["movers"]["AddonCompartmentMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-8,-5"
 	E.db["movers"]["MinimapButtonAnchor"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,0,-223"
 	E.db["movers"]["MinimapMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-6,-3"
-	if not E.Retail then
+	E.db["movers"]["MoverEltruismLootText"] = "BOTTOM,UIParent,BOTTOM,0,277"
+	if not E.Modern then
 		E.db["movers"]["MirrorTimer1Mover"] = "TOP,ElvUIParent,TOP,-1,-96"
 	end
 
@@ -675,7 +693,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	elseif E.Mists or E.Wrath then
 		E.db["movers"]["WatchFrameMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-115,-306"
 		E.db["movers"]["ObjectiveFrameMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-75,-319"
-	elseif E.Retail then
+	elseif E.Modern then
 		E.db["movers"]["ObjectiveFrameMover"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-6,-254"
 	end
 
@@ -720,7 +738,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["general"]["backdropfadecolor"]["b"] = 0
 	E.db["general"]["backdropfadecolor"]["g"] = 0
 	E.db["general"]["backdropfadecolor"]["r"] = 0
-	E.db["general"]["bonusObjectivePosition"] = "RIGHT"
 	E.db["general"]["bottomPanel"] = false
 	E.db["general"]["cropIcon"] = 2
 	E.db["general"]["font"] = "Kimberley"
@@ -747,11 +764,11 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["general"]["minimap"]["icons"]["mail"]["yOffset"] = 0
 	if E.db["datatexts"]["panels"]["EltruismDataText"] and E.db["datatexts"]["panels"]["EltruismDataText"]["enable"] then
 		E.db["movers"]["DTPanelEltruismDataTextMover"] = "BOTTOM,ElvUIParent,BOTTOM,0,0"
-		if not E.Retail then
+		if not E.Modern then
 			E.db["general"]["minimap"]["icons"]["mail"]["yOffset"] = -10
 		end
 	else
-		if not E.Retail then
+		if not E.Modern then
 			E.db["general"]["minimap"]["icons"]["mail"]["yOffset"] = -27
 		end
 	end
@@ -790,7 +807,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["general"]["valuecolor"]["b"] = valuecolors.b
 	E.db["general"]["valuecolor"]["g"] = valuecolors.g
 	E.db["general"]["valuecolor"]["r"] = valuecolors.r
-	E.db["general"]["vehicleSeatIndicatorSize"] = 76
 	E.db["general"]["taintLog"] = false
 
 	E.db["unitframe"]["units"]["player"]["forcehealthreaction"] = false
@@ -1061,9 +1077,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["unitframe"]["units"]["targettarget"]["buffs"]["sourceText"]["font"] = "Kimberley"
 	E.db["unitframe"]["units"]["targettarget"]["debuffs"]["sourceText"]["font"] = "Kimberley"
 
-
-
-
 	E.db["actionbar"]["targetReticleColor"]["b"] = valuecolors.b
 	E.db["actionbar"]["targetReticleColor"]["g"] = valuecolors.g
 	E.db["actionbar"]["targetReticleColor"]["r"] = valuecolors.r
@@ -1094,7 +1107,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["databars"]["threat"]["frameStrata"] = "MEDIUM"
 	if E.Mists or E.TBC or E.Wrath or E.Classic then
 		E.db["databars"]["threat"]["enable"] = true
-	elseif E.Retail then
+	elseif E.Modern then
 		E.db["databars"]["threat"]["enable"] = false
 	end
 	E.db["databars"]["azerite"]["font"] = "Kimberley"
@@ -1131,7 +1144,6 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["databars"]["colors"]["factionColors"][9]["r"] = 0.44313725490196
 	E.db["databars"]["colors"]["useCustomFactionColors"] = true
 
-
 	E.db["databars"]["customTexture"] = true
 
 	--new experience
@@ -1142,7 +1154,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["databars"]["experience"]["height"] = 12
 	E.db["databars"]["experience"]["mouseover"] = true
 	E.db["databars"]["experience"]["questCompletedOnly"] = true
-	if E.Retail then
+	if E.Modern then
 		E.db["databars"]["experience"]["questCurrentZoneOnly"] = true
 	else
 		E.db["databars"]["experience"]["questCurrentZoneOnly"] = false
@@ -1185,25 +1197,26 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 	E.db["datatexts"]["noCombatHover"] = true
 	E.db["datatexts"]["panels"]["MinimapPanel"][1] = "Time"
 	E.db["datatexts"]["panels"]["MinimapPanel"]["border"] = false
+	E.db["datatexts"]["panels"]["LeftChatDataPanel"]["border"] = false
+	E.db["datatexts"]["panels"]["LeftChatDataPanel"]["panelTransparency"] = true
+	E.db["datatexts"]["panels"]["LeftChatDataPanel"]["backdrop"] = false
+	E.db["datatexts"]["panels"]["RightChatDataPanel"]["border"] = false
+	E.db["datatexts"]["panels"]["RightChatDataPanel"]["panelTransparency"] = true
+	E.db["datatexts"]["panels"]["RightChatDataPanel"]["backdrop"] = false
 	if E.Retail then
 		E.db["datatexts"]["panels"]["LeftChatDataPanel"][3] = "Missions"
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["border"] = false
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["panelTransparency"] = true
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["backdrop"] = false
 		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["right"] = "System"
 		E.db["datatexts"]["panels"]["RightChatDataPanel"][2] = "Combat"
 		E.db["datatexts"]["panels"]["RightChatDataPanel"]["border"] = false
 		E.db["datatexts"]["panels"]["RightChatDataPanel"]["left"] = "Orderhall"
 		E.db["datatexts"]["panels"]["RightChatDataPanel"]["middle"] = "BfA Missions"
-		E.db["datatexts"]["panels"]["RightChatDataPanel"]["panelTransparency"] = true
-		E.db["datatexts"]["panels"]["RightChatDataPanel"]["backdrop"] = false
 		if IsAddOnLoaded("ElvUI_SLE") then
 			E.db["datatexts"]["panels"]["MinimapPanel"][2] = "S&L Friends"
 		else
 			E.db["datatexts"]["panels"]["MinimapPanel"][2] = "Friends"
 		end
-	elseif E.Classic or E.Mists or E.TBC or E.Wrath then
-		if E.Mists or E.TBC or E.Wrath then
+	else
+		if not E.Classic then
 			E.db["datatexts"]["panels"]["LeftChatDataPanel"][1] = "DualSpecialization"
 		else
 			E.db["datatexts"]["panels"]["LeftChatDataPanel"][1] = "Eltruism"
@@ -1216,17 +1229,11 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 		else
 			E.db["datatexts"]["panels"]["LeftChatDataPanel"][3] = "Friends"
 		end
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["border"] = false
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["panelTransparency"] = true
-		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["backdrop"] = false
 		E.db["datatexts"]["panels"]["LeftChatDataPanel"]["right"] = "Guild"
 		E.db["datatexts"]["panels"]["MinimapPanel"][2] = "Coords"
 		E.db["datatexts"]["panels"]["RightChatDataPanel"][2] = "Combat"
-		E.db["datatexts"]["panels"]["RightChatDataPanel"]["border"] = false
 		E.db["datatexts"]["panels"]["RightChatDataPanel"]["left"] = "System"
 		E.db["datatexts"]["panels"]["RightChatDataPanel"]["middle"] = "Combat Time"
-		E.db["datatexts"]["panels"]["RightChatDataPanel"]["panelTransparency"] = true
-		E.db["datatexts"]["panels"]["RightChatDataPanel"]["backdrop"] = false
 	end
 
 	-- Tooltip
@@ -1378,7 +1385,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 
 	-- Custom Text: Arena
 	E.db["unitframe"]["units"]["arena"]["customTexts"] = E.db["unitframe"]["units"]["arena"]["customTexts"] or {}
-	if E.Retail or E.Mists or E.TBC or E.Wrath then
+	if E.Modern or E.Mists or E.TBC or E.Wrath then
 		E.db["unitframe"]["units"]["arena"]["customTexts"]["EltreumArenaHealth"] = {
 			["attachTextTo"] = "Health",
 			["enable"] = true,
@@ -1775,7 +1782,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 		["xOffset"] = 2,
 		["yOffset"] = 0
 	}
-	if E.Retail then
+	if E.Modern then
 		E.db["unitframe"]["units"]["target"]["customTexts"]["EltreumTargetName"] = {
 			["attachTextTo"] = "Health",
 			["enable"] = true,
@@ -1787,7 +1794,7 @@ function ElvUI_EltreumUI:SetupGeneralLayout()
 			["xOffset"] = -2,
 			["yOffset"] = 0
 		}
-	elseif E.Mists or E.TBC or E.Wrath or E.Classic then
+	else
 		E.db["unitframe"]["units"]["target"]["customTexts"]["EltreumTargetName"] = {
 			["attachTextTo"] = "Health",
 			["enable"] = true,
@@ -1897,7 +1904,7 @@ function ElvUI_EltreumUI:SetupPrivate()
 	E.private["general"]["nameplateLargeFont"] = "Kimberley"
 	E.private["general"]["nameplateLargeFontSize"] = 10
 	E.private["general"]["raidUtility"] = true
-	if E.Retail then
+	if E.Modern then
 		E.private["general"]["minimap"]["hideTracking"] = true
 	end
 end
@@ -1905,7 +1912,7 @@ end
 -- Global DB
 function ElvUI_EltreumUI:SetupGlobal()
 	-- ElvUI Global DB
-	if E.Retail then
+	if E.Modern then
 		E.global["general"]["commandBarSetting"] = "ENABLED_RESIZEPARENT"
 	end
 	E.global["general"]["smallerWorldMap"] = false
@@ -2004,8 +2011,11 @@ function ElvUI_EltreumUI:SetupDataText()
 		if E.Classic and (E.myclass == 'HUNTER' or E.myclass == 'WARLOCK') then
 			E.db["datatexts"]["panels"]["EltruismDataText"][1] = "Ammo"
 		else
-			--E.db["datatexts"]["panels"]["EltruismDataText"][1] = "Eltruism"
-			E.db["datatexts"]["panels"]["EltruismDataText"][1] = "DualSpecialization"
+			if E.Forever or (E.Classic and not E.ClassicSOD) then --todo replace with dual once the lib is updated for it
+				E.db["datatexts"]["panels"]["EltruismDataText"][1] = "Eltruism"
+			else
+				E.db["datatexts"]["panels"]["EltruismDataText"][1] = "DualSpecialization"
+			end
 		end
 	end
 	E.db["datatexts"]["panels"]["EltruismDataText"]["enable"] = true
@@ -2087,6 +2097,10 @@ function ElvUI_EltreumUI:SetupCVars()
 
 	SetCVar("enableMouseoverCast", 1) --this will prevent people not having mouse over cast if the blizzard addon is loaded
 
+	--graphics
+	SetCVar("Brightness", 45)
+	SetCVar("Contrast", 60)
+
 	-- fast loot
 	SetCVar("autoLootRate", 1)
 
@@ -2116,8 +2130,15 @@ function ElvUI_EltreumUI:SetupCVars()
 	SetCVar('SoftTargetIconFriend', 0)
 	SetCVar('WorldTextMinSize', 6)
 
-	if E.Retail then
-		SetCVar('cameraDistanceMaxZoomFactor', 2.6)
+	if E.Modern then
+		if E.Retail then
+			SetCVar('cameraDistanceMaxZoomFactor', 2.6)
+		else
+			SetCVar('cameraDistanceMaxZoomFactor', 4.0)
+		end
+
+		--show loot sparkles in case the user has outline disabled
+		SetCVar("outlineModeShowLootEffectWhenDisabled", 1)
 
 		--new midnight things
 		SetCVar('damageMeterEnabled', 1)
@@ -2183,13 +2204,14 @@ function ElvUI_EltreumUI:NameplateCVars()
 	SetCVar('nameplateTargetBehindMaxDistance', 40)
 	SetCVar('nameplateShowEnemies', 1)
 	SetCVar("nameplateShowFriends", 1)
+	--SetCVar('nameplateShowFriendlyNpcs',0) --this is npcs, specially inside instances, call in the other function
 
 	--[[12.1.0 new cvars
 	nameplateCheckDistanceForTarget --ignores distance to display target np
 	nameplateNotSelectedAlpha returns for retail
 	]]
 
-	if E.Retail then
+	if E.Modern then
 		SetCVar("nameplateShowFriendlyPlayers", 1)
 		SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)
 		SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", 1)
@@ -2198,6 +2220,13 @@ function ElvUI_EltreumUI:NameplateCVars()
 	else
 		SetCVar("nameplateNotSelectedAlpha",0.5)
 	end
+
+	--[[
+	if E.Forever then --not yet implemented it seems
+		nameplateMaxVerticalDistance
+		nameplateMaxVerticalDistanceAtMaxRange
+	end
+	]]
 
 	SetCVar('nameplateMaxAlpha', 1)
 	SetCVar('nameplateMaxAlphaDistance', GetCVarDefault('nameplateMaxAlphaDistance'))
@@ -2208,7 +2237,7 @@ function ElvUI_EltreumUI:NameplateCVars()
 	SetCVar('nameplatePlayerLargerScale', 1.8)
 	SetCVar('nameplateSelectedAlpha', 1)
 
-	if not E.Retail then
+	if not E.Modern then
 		SetCVar('nameplateSelfScale', 1)
 		SetCVar('nameplateGlobalScale', 1)
 		SetCVar('NamePlateHorizontalScale', 1)
@@ -2226,7 +2255,7 @@ end
 
 -- Alternate DPS party layout
 function ElvUI_EltreumUI:AlternativeGroupsDPS()
-	if ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") then
+	if ElvDB.profileKeys[E.mynameRealm] and ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") then
 		if not E.db.movers then E.db.movers = {} end
 		E.db["movers"]["ElvUF_PartyMover"] = "TOPLEFT,ElvUIParent,TOPLEFT,199,-258"
 		E.db["movers"]["ElvUF_Raid1Mover"] = "TOPLEFT,ElvUIParent,TOPLEFT,4,-432"
@@ -2266,7 +2295,7 @@ end
 
 -- Original DPS party layout
 function ElvUI_EltreumUI:OriginalGroupsDPS()
-	if ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") then
+	if ElvDB.profileKeys[E.mynameRealm] and ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") then
 		if not E.db.movers then E.db.movers = {} end
 		E.db["movers"]["ElvUF_PartyMover"] = "TOPLEFT,ElvUIParent,TOPLEFT,4,-247"
 		E.db["movers"]["ElvUF_Raid1Mover"] = "TOPLEFT,ElvUIParent,TOPLEFT,0,1"

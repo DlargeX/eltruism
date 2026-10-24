@@ -2,6 +2,10 @@ local E = unpack(ElvUI)
 local S = E:GetModule('Skins')
 local _G = _G
 local hooksecurefunc = _G.hooksecurefunc
+local pairs = _G.pairs
+local tostring = _G.tostring
+local unpack = _G.unpack
+local select = _G.select
 
 local function handlechildtab(frame)
 	for _, v in pairs{frame:GetChildren()} do
@@ -515,7 +519,7 @@ function ElvUI_EltreumUI:SkinAuctionator()
 				end
 
 				--buying
-				if E.Retail or E.Mists or E.Wrath then
+				if E.Modern or E.Mists or E.Wrath then
 					S:HandleButton(_G["AuctionatorBuyCommodityFrame"].BackButton)
 					S:HandleButton(_G["AuctionatorBuyCommodityFrame"].DetailsContainer.BuyButton)
 					S:HandleEditBox(_G["AuctionatorBuyCommodityFrame"].DetailsContainer.Quantity)
@@ -618,7 +622,7 @@ function ElvUI_EltreumUI:EltruismAuctionFrame()
 	if E.db.ElvUI_EltreumUI.skins.auctionator then
 		if E.private.skins.blizzard.enable then
 			ElvUI_EltreumUI:SkinAuctionator()
-			if E.Retail or E.Mists or E.Wrath then
+			if E.Modern or E.Mists or E.Wrath then
 
 				local function skinbaseframe()
 					if not _G["AuctionHouseFrame"].EltruismTabSkinned then

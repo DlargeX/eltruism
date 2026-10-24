@@ -1,11 +1,9 @@
 local E, L = unpack(ElvUI)
 local _G = _G
-local IsInInstance = _G.IsInInstance
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local hooksecurefunc = _G.hooksecurefunc
 local InCombatLockdown = _G.InCombatLockdown
-local UnitLevel = _G.UnitLevel
-local level
+local tonumber = _G.tonumber
 
 --12.1.0 changes
 local IsPlayerAtEffectiveMaxLevel = _G.GameRulesUtil and _G.GameRulesUtil.IsPlayerAtEffectiveMaxLevel or _G.IsPlayerAtEffectiveMaxLevel
@@ -78,7 +76,7 @@ function ElvUI_EltreumUI:CooldownColors()
 		--E:UpdateMediaItems()
 	end
 
-	if E.db.unitframe.units.player.enable and E.db.unitframe.units.player.RestIcon.enable and E.db.ElvUI_EltreumUI.unitframes.blizzardresticonclasscolor and E.Retail then
+	if E.db.unitframe.units.player.enable and E.db.unitframe.units.player.RestIcon.enable and E.db.ElvUI_EltreumUI.unitframes.blizzardresticonclasscolor and E.Modern then
 		E.db.unitframe.units.player.RestIcon.color.r = valuecolors.r
 		E.db.unitframe.units.player.RestIcon.color.g = valuecolors.g
 		E.db.unitframe.units.player.RestIcon.color.b = valuecolors.b
@@ -91,7 +89,7 @@ end
 --hide raid/party/arena frames in bgs/arenas bc of battlegroundenemies/gladiusEX or similar
 function ElvUI_EltreumUI:ArenaBattlegroundGroupUnitframes()
 	if E.private.unitframe.enable then
-		local _, instanceType = IsInInstance()
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		if E.db.ElvUI_EltreumUI.unitframes.bgunitframes then
 			if instanceType == "pvp" then
 				E.db["unitframe"]["units"]["party"]["visibility"] = "hide"
@@ -108,7 +106,7 @@ function ElvUI_EltreumUI:ArenaBattlegroundGroupUnitframes()
 				E.db["unitframe"]["units"]["raid1"]["visibility"] = "[@raid6,noexists][@raid21,exists] hide;show"
 				E.db["unitframe"]["units"]["raid2"]["visibility"] = "[@raid21,noexists][@raid31,exists] hide;show"
 				E.db["unitframe"]["units"]["raid3"]["visibility"] = "[@raid31,noexists] hide;show"
-				if E.db.ElvUI_EltreumUI.unitframes.arenaunitframes or IsAddOnLoaded("BattleGroundEnemies") then
+				if E.db.ElvUI_EltreumUI.unitframes.arenaunitframes then
 					E.db["unitframe"]["units"]["arena"]["enable"] = true
 				end
 			end
@@ -123,7 +121,7 @@ function ElvUI_EltreumUI:ArenaBattlegroundGroupUnitframes()
 				_G["ElvUF_Arena3"]:Hide()
 				_G["ElvUF_Arena4"]:Hide()
 				_G["ElvUF_Arena5"]:Hide()
-			elseif (instanceType == "pvp" and IsAddOnLoaded("BattleGroundEnemies")) then
+			elseif (instanceType == "pvp") then
 				_G["ElvUF_Arena1"]:Hide()
 				_G["ElvUF_Arena2"]:Hide()
 				_G["ElvUF_Arena3"]:Hide()
@@ -137,7 +135,7 @@ end
 --show/hide buffs if in arena or not
 function ElvUI_EltreumUI:DynamicBuffs()
 	if E.db.ElvUI_EltreumUI.unitframes.arenabuffs and E.private.unitframe.enable and not InCombatLockdown() then
-		local _, instanceType = IsInInstance()
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		if instanceType == "arena" or instanceType == "pvp" then
 			E.db["nameplates"]["units"]["ENEMY_PLAYER"]["buffs"]["enable"] = true
 			E.db["unitframe"]["units"]["target"]["buffs"]["enable"] = true
@@ -211,12 +209,12 @@ end
 end]]
 
 --Dynamic Spellsteal Nameplate Style Filter
-function ElvUI_EltreumUI:DynamicSpellStealStyleFilter()
+--[[function ElvUI_EltreumUI:DynamicSpellStealStyleFilter()
 	if not E.private.ElvUI_EltreumUI.install_version then
 		return
 	else
 		if E.private.ElvUI_EltreumUI.install_version >= "2.2.5" and E.db.nameplates.filters.EltreumSpellsteal and not InCombatLockdown() then
-			if E.Mists or E.TBC or E.Wrath or E.Retail then
+			if E.Mists or E.TBC or E.Wrath or E.Modern then
 				if E.myclass == 'MAGE' then
 					level = UnitLevel("player")
 					if E.Retail then
@@ -225,7 +223,7 @@ function ElvUI_EltreumUI:DynamicSpellStealStyleFilter()
 						elseif level < 39 then
 							E.db["nameplates"]["filters"]["EltreumSpellsteal"]["triggers"]["enable"] = false
 						end
-					elseif E.Mists or E.TBC or E.Wrath then
+					elseif not E.Classic then
 						if level >= 70 then
 							E.db["nameplates"]["filters"]["EltreumSpellsteal"]["triggers"]["enable"] = true
 						elseif level < 70 then
@@ -243,7 +241,7 @@ function ElvUI_EltreumUI:DynamicSpellStealStyleFilter()
 			--E:UpdateNamePlates()
 		end
 	end
-end
+end]]
 
 --swap bar1 and bar4 action paging / visibility
 function ElvUI_EltreumUI:ActionPagingSwap(pagingnumber)
@@ -268,7 +266,7 @@ function ElvUI_EltreumUI:ActionPagingSwap(pagingnumber)
 					E.db["actionbar"]["bar"..i]["paging"]["EVOKER"] = ""
 				else
 					E.db["actionbar"]["bar"..i]["visibility"] = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
-					if E.Retail or E.Mists or E.TBC or E.Wrath then
+					if E.Modern or E.Mists or E.TBC or E.Wrath then
 						E.db["actionbar"]["bar"..pagingnumber]["paging"]["DEATHKNIGHT"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 						E.db["actionbar"]["bar"..pagingnumber]["paging"]["DEMONHUNTER"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 						E.db["actionbar"]["bar"..pagingnumber]["paging"]["DRUID"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
@@ -311,7 +309,7 @@ function ElvUI_EltreumUI:ActionPagingSwap(pagingnumber)
 				E.db["actionbar"]["stanceBar"]["visibility"] = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 				--E.db["actionbar"]["totemBar"]["visibility"] = "[combat] show;[@target, noexists] hide; [vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 
-				if E.Retail or E.Mists or E.TBC or E.Wrath then
+				if E.Modern or E.Mists or E.TBC or E.Wrath then
 					E.db["actionbar"]["bar1"]["paging"]["DEATHKNIGHT"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar1"]["paging"]["DEMONHUNTER"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar1"]["paging"]["DRUID"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
@@ -367,7 +365,7 @@ function ElvUI_EltreumUI:ActionPagingSwap(pagingnumber)
 				E.db["actionbar"]["stanceBar"]["visibility"] = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 				--E.db["actionbar"]["totemBar"]["visibility"] = "[combat] show;[@target, noexists] hide; [vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 
-				if E.Retail or E.Mists or E.TBC or E.Wrath then
+				if E.Modern or E.Mists or E.TBC or E.Wrath then
 					E.db["actionbar"]["bar4"]["paging"]["DEATHKNIGHT"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar4"]["paging"]["DEMONHUNTER"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar4"]["paging"]["DRUID"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"
@@ -423,7 +421,7 @@ function ElvUI_EltreumUI:ActionPagingSwap(pagingnumber)
 				E.db["actionbar"]["stanceBar"]["visibility"] = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 				--E.db["actionbar"]["totemBar"]["visibility"] = "[combat] show;[@target, noexists] hide; [vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 
-				if E.Retail or E.Mists or E.TBC or E.Wrath then
+				if E.Modern or E.Mists or E.TBC or E.Wrath then
 					E.db["actionbar"]["bar4"]["paging"]["DEATHKNIGHT"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar4"]["paging"]["DEMONHUNTER"] = "[overridebar] 18; [vehicleui] 16;[possessbar] 16;[bonusbar:5] 11;"
 					E.db["actionbar"]["bar4"]["paging"]["DRUID"] = "[overridebar] 18; [vehicleui] 16; [possessbar] 16; [bonusbar:1,nostealth] 7; [bonusbar:1,stealth] 8; [bonusbar:2] 10; [bonusbar:3] 9; [bonusbar:4] 10;[bonusbar:5] 11;"

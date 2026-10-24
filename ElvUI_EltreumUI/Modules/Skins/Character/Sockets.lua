@@ -12,9 +12,8 @@ local IsModifiedClick = _G.IsModifiedClick
 local C_Timer = _G.C_Timer
 local pairs = _G.pairs
 local GetInventoryItemLink = _G.GetInventoryItemLink
-local GetInventorySlotInfo = _G.GetInventorySlotInfo
+local GetInventorySlotInfo = _G.C_PaperDollInfo and _G.C_PaperDollInfo.GetInventorySlotInfo or _G.GetInventorySlotInfo
 local string = _G.string
-local stringformat = string.format
 local stringgsub = string.gsub
 local stringupper = string.upper
 local stringgmatch = string.gmatch
@@ -1537,7 +1536,6 @@ function ElvUI_EltreumUI:ClassicSockets()
 			self.refreshTimer3 = nil
 		end
 		self:_Refresh()
-
 
 		--[[self.refreshTimer0 = C_Timer.NewTimer(0.1, function()
 			self:_Refresh()

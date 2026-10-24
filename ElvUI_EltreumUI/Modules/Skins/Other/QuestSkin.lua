@@ -16,15 +16,19 @@ local select = _G.select
 local ScenarioObjectiveBlockBackground
 local wowheadbutton = CreateFrame("Button", nil)
 local dontexpandanymorequests = 0
-if E.Retail then
+if E.Modern then
 	ScenarioObjectiveBlockBackground = CreateFrame("Frame", "EltruismScenarioBlockBg")
 	S:HandleFrame(ScenarioObjectiveBlockBackground)
 end
 local format = _G.format
 local C_QuestLog = _G.C_QuestLog
 local ObjectiveTrackerFrame = _G.ObjectiveTrackerFrame
+local C_SuperTrack = _G.C_SuperTrack
+local MAX_QUESTS = _G.MAX_QUESTS
+local QUESTS_LABEL = _G.QUESTS_LABEL
 local math = _G.math
 local Enum = _G.Enum
+local next = _G.next
 local InCombatLockdown = _G.InCombatLockdown
 local tonumber = _G.tonumber
 local strmatch = _G.strmatch
@@ -41,7 +45,7 @@ function ElvUI_EltreumUI:SkinQuests()
 
 	--create the button for wowhead
 	if E.db.ElvUI_EltreumUI.skins.questswowhead then
-		if E.Retail then
+		if E.Modern then
 			wowheadbutton:SetWidth(80)
 			wowheadbutton:SetHeight(20)
 			wowheadbutton:SetParent(_G.WorldMapFrame)
@@ -169,12 +173,32 @@ function ElvUI_EltreumUI:SkinQuests()
 			elseif E.locale == "zhCN" or E.locale == "zhTW" then
 				wowheadregion = "cn.classic.wowhead.com"
 			end
+		elseif E.Forever then
+			if E.locale == "deDE" then
+				wowheadregion = "wowhead.com/forever/de"
+			elseif E.locale == "enUS" or E.locale == "enCN" or E.locale == "enGB" or E.locale == "enTW" then
+				wowheadregion = "wowhead.com/forever"
+			elseif E.locale == "esMX" or E.locale == "esES" then
+				wowheadregion = "wowhead.com/forever/es"
+			elseif E.locale == "frFR" then
+				wowheadregion = "wowhead.com/forever/fr"
+			elseif E.locale == "itIT" then
+				wowheadregion = "wowhead.com/forever/it"
+			elseif E.locale == "koKR" then
+				wowheadregion = "wowhead.com/forever/ko"
+			elseif E.locale == "ptBR" or E.locale == "ptPT" then
+				wowheadregion = "wowhead.com/forever/pt"
+			elseif E.locale == "ruRU" then
+				wowheadregion = "wowhead.com/forever/ru"
+			elseif E.locale == "zhCN" or E.locale == "zhTW" then
+				wowheadregion = "wowhead.com/forever/cn"
+			end
 		end
 		--register the button for clicks
 		ElvUI_EltreumUI:MacroClick(wowheadbutton)
 
 		--get questid
-		if E.Retail then
+		if E.Modern then
 			local questID
 			local getquestid = CreateFrame("FRAME")
 			getquestid:RegisterEvent("QUEST_DATA_LOAD_RESULT")
@@ -184,7 +208,7 @@ function ElvUI_EltreumUI:SkinQuests()
 				if questID ~= nil then
 					questID = questID
 				elseif questID == nil then
-					questID = _G.C_SuperTrack.GetSuperTrackedQuestID()
+					questID = C_SuperTrack.GetSuperTrackedQuestID()
 				end
 			end)
 			--set the link to show when the button is clicked
@@ -208,7 +232,7 @@ function ElvUI_EltreumUI:SkinQuests()
 		elseif E.Mists or E.TBC or E.Wrath then
 			local questID
 			--hook the function that sets the quest detail to get the questID from the quest title
-			hooksecurefunc("QuestLog_SetSelection", function(questTitle) --_G.QuestLogFrame.lua 311
+			hooksecurefunc("QuestLog_SetSelection", function(questTitle) --QuestLogFrame.lua 311
 				questID = select(8, GetQuestLogTitle(questTitle))
 			end)
 			--set the link to show when the button is clicked
@@ -221,7 +245,6 @@ function ElvUI_EltreumUI:SkinQuests()
 	end
 
 	if E.db.ElvUI_EltreumUI.skins.quests and E.private.skins.blizzard.objectiveTracker and E.private.skins.blizzard.enable then
-
 
 		--option to change the quest scale
 		if _G["QuestFrame"] then
@@ -245,10 +268,22 @@ function ElvUI_EltreumUI:SkinQuests()
 			end)
 		end
 
-		if E.Retail then
+		if E.Modern then
+			--[[
+			--previous quest addons
 			if (not IsAddOnLoaded('!KalielsTracker')) and (not IsAddOnLoaded('SorhaQuestLog')) and (not IsAddOnLoaded('ClassicQuestLog')) and (not IsAddOnLoaded('Who Framed Watcher Wabbit?')) then
+			]]
+			if not IsAddOnLoaded('!KalielsTracker') then
 				--WQs banner
 				local ObjectiveTrackerBonusBannerFrame = _G.ObjectiveTrackerTopBannerFrame --renamed?
+				local QUEST_WATCH_QUEST_READY = _G.QUEST_WATCH_QUEST_READY
+				local TRACKER_ALL_OBJECTIVES = _G.TRACKER_ALL_OBJECTIVES
+				local ObjectiveFrameMover = _G.ObjectiveFrameMover
+				local ObjectiveTrackerBlocksFrame = _G.ObjectiveTrackerBlocksFrame
+				local QuestObjectiveTracker = _G.QuestObjectiveTracker
+				local ScenarioObjectiveTracker = _G.ScenarioObjectiveTracker
+				local numMAX_QUESTS = E.Forever and 40 or 35 --MAX_QUESTS in retail returns 25
+
 				if ObjectiveTrackerBonusBannerFrame then
 					--textcoords from https://www.townlong-yak.com/framexml/39229/Helix/AtlasInfo.lua
 					ObjectiveTrackerBonusBannerFrame.Title:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
@@ -271,30 +306,116 @@ function ElvUI_EltreumUI:SkinQuests()
 					ObjectiveTrackerBonusBannerFrame.FiligreeGlow:SetVertexColor(classcolor.r, classcolor.g, classcolor.b) --bonusobjectives-title-icon
 				end
 
-				if _G.ObjectiveFrameMover then
-					questside = _G.ObjectiveFrameMover:GetPoint()
+				if ObjectiveFrameMover then
+					questside = ObjectiveFrameMover:GetPoint()
 				else
-					questside = _G.ObjectiveTrackerFrame:GetPoint()
+					questside = ObjectiveTrackerFrame:GetPoint()
 				end
 
-				if _G.ObjectiveTrackerFrame and _G.ObjectiveTrackerFrame.HeaderMenu and _G.ObjectiveTrackerFrame.HeaderMenu.Title then --fix when collapsed
-					_G.ObjectiveTrackerFrame.HeaderMenu.Title:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-					_G.ObjectiveTrackerFrame.HeaderMenu.Title:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				if ObjectiveTrackerFrame and ObjectiveTrackerFrame.HeaderMenu and ObjectiveTrackerFrame.HeaderMenu.Title then --fix when collapsed
+					ObjectiveTrackerFrame.HeaderMenu.Title:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+					ObjectiveTrackerFrame.HeaderMenu.Title:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 				end
-				if _G.ObjectiveTrackerFrame and _G.ObjectiveTrackerFrame.Header and _G.ObjectiveTrackerFrame.Header.Text then --its the all objectives thing
-					_G.ObjectiveTrackerFrame.Header.Text:SetText("")
-					_G.ObjectiveTrackerFrame.Header.Text.SetText = E.noop
-					if _G.ObjectiveTrackerFrame.Header.EltruismStatusLine then
-						_G.ObjectiveTrackerFrame.Header.EltruismStatusLine:Kill()
+				if ObjectiveTrackerFrame and ObjectiveTrackerFrame.Header and ObjectiveTrackerFrame.Header.Text then --its the all objectives thing
+					ObjectiveTrackerFrame.Header.Text:SetText("")
+					ObjectiveTrackerFrame.Header.Text.SetText = E.noop
+					if ObjectiveTrackerFrame.Header.EltruismStatusLine then
+						ObjectiveTrackerFrame.Header.EltruismStatusLine:Kill()
 					end
 				end
 
 				local mult = 0.85
 
+				local function FormatQuestTitle(rawText, titleColorHex)
+					if not rawText then return "" end
+					local colorCode, tag, title = rawText:match("^(|c%x%x%x%x%x%x%x%x)(%[%d+%+?%])|?r?%s*(.*)$")
+
+					if tag then
+						title = title:gsub("|r$", "")
+						if colorCode then
+							return string.format("%s%s|r |cff%s%s|r", colorCode, tag, titleColorHex, title)
+						else
+							return string.format("%s |cff%s%s|r", tag, titleColorHex, title)
+						end
+					end
+					local cleanTitle = rawText:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+					return string.format("|cff%s%s|r", titleColorHex, cleanTitle)
+				end
+
+				local function ApplyCustomTitleColor(headerText, multiplier)
+					if not headerText or headerText.isFormatting then return end
+					headerText.isFormatting = true
+
+					local currentText = headerText:GetText()
+					if currentText and currentText ~= "" then
+						if not headerText.rawTitle or not currentText:find("|cff") then
+							headerText.rawTitle = currentText
+						end
+						local multVal = multiplier or 1
+						local hex
+						if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
+							hex = E:RGBToHex(
+								multVal * E.db.ElvUI_EltreumUI.skins.questsettings.customr,
+								multVal * E.db.ElvUI_EltreumUI.skins.questsettings.customg,
+								multVal * E.db.ElvUI_EltreumUI.skins.questsettings.customb
+							):gsub("|cff", "")
+						else
+							hex = E:RGBToHex(
+								multVal * classcolor.r,
+								multVal * classcolor.g,
+								multVal * classcolor.b
+							):gsub("|cff", "")
+						end
+						headerText:SetText(FormatQuestTitle(headerText.rawTitle, hex))
+					end
+
+					headerText.isFormatting = nil
+				end
+
 				--skin the progress bars
 				local function EltreumSkinProgressBars(line)
 					local bar = line
 					if not bar then return end
+
+					if not bar.backdrop and bar.CreateBackdrop then
+						bar:CreateBackdrop('Transparent')
+					end
+
+					if bar.backdrop then
+						bar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
+						if bar.backdrop.SetBackdropColor ~= E.noop then
+							bar.backdrop:SetBackdropColor(0, 0, 0, E.db.general.backdropfadecolor.a)
+							bar.backdrop.SetBackdropColor = E.noop
+						end
+					end
+
+					if bar.BarBG then
+						bar.BarBG:Hide()
+					end
+
+					if bar.GetStatusBarTexture and bar:GetStatusBarTexture() then
+						bar:GetStatusBarTexture():SetTexture(E.LSM:Fetch("statusbar", E.db.ElvUI_EltreumUI.skins.queststatusbartexture))
+					end
+
+					if bar.Icon then
+						if bar.Icon.backdrop then
+							bar.Icon.backdrop:SetShown(bar.Icon:IsShown())
+						end
+						if bar.BarFrame and bar.BarFrame.backdrop then
+							bar.BarFrame.backdrop:SetShown(bar.Icon:IsShown())
+						end
+						if not bar.Icon.EltruismHooked then
+							hooksecurefunc(bar.Icon, "Show", function(icon)
+								if icon.backdrop then icon.backdrop:Show() end
+								if bar.BarFrame and bar.BarFrame.backdrop then bar.BarFrame.backdrop:Show() end
+							end)
+							hooksecurefunc(bar.Icon, "Hide", function(icon)
+								if icon.backdrop then icon.backdrop:Hide() end
+								if bar.BarFrame and bar.BarFrame.backdrop then bar.BarFrame.backdrop:Hide() end
+							end)
+							bar.Icon.EltruismHooked = true
+						end
+					end
 
 					if not InCombatLockdown() then
 						if bar.Icon and bar.Icon:IsVisible() then
@@ -303,60 +424,75 @@ function ElvUI_EltreumUI:SkinQuests()
 							bar.Icon:SetMask('')
 							bar.Icon:SetTexCoord(unpack(E.TexCoords))
 
-							if not bar.BarFrame.backdrop then
-								bar.BarFrame:CreateBackdrop()
-								bar.BarFrame.backdrop:SetOutside(bar.Icon)
-								if E.db.ElvUI_EltreumUI.skins.shadow.enable and not E.db.ElvUI_EltreumUI.borders.universalborders then
-									if not bar.BarFrame.backdrop.shadow then
-										bar.BarFrame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-										ElvUI_EltreumUI:ShadowColor(bar.BarFrame.backdrop.shadow)
-									end
+							if bar.BarFrame then
+								if not bar.BarFrame.backdrop then
+									bar.BarFrame:CreateBackdrop()
 								end
-								bar.BarFrame.backdrop:SetShown(bar.Icon:IsShown())
-							else
-								bar.BarFrame.backdrop:SetOutside(bar.Icon)
-								if E.db.ElvUI_EltreumUI.skins.shadow.enable and not E.db.ElvUI_EltreumUI.borders.universalborders then
-									if not bar.BarFrame.backdrop.shadow then
-										bar.BarFrame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-										ElvUI_EltreumUI:ShadowColor(bar.BarFrame.backdrop.shadow)
+								if bar.BarFrame.backdrop then
+									bar.BarFrame.backdrop:SetOutside(bar.Icon)
+									if E.db.ElvUI_EltreumUI.skins.shadow.enable and not E.db.ElvUI_EltreumUI.borders.universalborders then
+										if not bar.BarFrame.backdrop.shadow then
+											bar.BarFrame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+											ElvUI_EltreumUI:ShadowColor(bar.BarFrame.backdrop.shadow)
+										end
 									end
+									bar.BarFrame.backdrop:SetShown(bar.Icon:IsShown())
 								end
-								bar.BarFrame.backdrop:SetShown(bar.Icon:IsShown())
 							end
 						end
 
-						if not bar.EltruismSkin then
-							if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and E.private.general.pixelPerfect and not E.db.ElvUI_EltreumUI.borders.universalborders then
+						if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and E.private.general.pixelPerfect and not E.db.ElvUI_EltreumUI.borders.universalborders then
+							if not bar.shadow then
 								bar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 								ElvUI_EltreumUI:ShadowColor(bar.shadow)
 							end
-
-							--E:Delay(0, function()
-							bar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
-							bar.backdrop:SetBackdropColor(0,0,0)
-							bar.backdrop.SetBackdropColor = E.noop
-							--end)
-							bar:GetStatusBarTexture():SetTexture(E.LSM:Fetch("statusbar", E.db.ElvUI_EltreumUI.skins.queststatusbartexture))
-							--[[hooksecurefunc(bar, "SetStatusBarColor", function(_, r, g, b)
-								bar:GetStatusBarTexture():SetGradient("HORIZONTAL", {r=r - 0.4,g= g - 0.4,b= b - 0.4,a= E.db.general.backdropfadecolor.a}, {r=r + 0.2,g= g + 0.2,b= b + 0.2,a= E.db.general.backdropfadecolor.a})
-								bar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
-								bar.backdrop:SetBackdropColor(0,0,0)
-							end)]]
-
-							if bar.SetPercent then
-								hooksecurefunc(bar:GetParent(), "SetPercent", function(frame)--,percent)
-									local statusbar = frame.Bar
-									if not statusbar then return end
-									--S:StatusBarColorGradient(statusbar, percent, 100)
-									local r,g,b = statusbar:GetStatusBarColor()
-									statusbar:GetStatusBarTexture():SetGradient("HORIZONTAL", {r=r - 0.4,g= g - 0.4,b= b - 0.4,a= E.db.general.backdropfadecolor.a}, {r=r + 0.2,g= g + 0.2,b= b + 0.2,a= E.db.general.backdropfadecolor.a})
-									statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
-									statusbar.backdrop:SetBackdropColor(0,0,0)
-								end)
-							end
-							bar.EltruismSkin = true
 						end
 					end
+
+					if not bar.EltruismHookedSetValue and bar.SetValue then
+						hooksecurefunc(bar, "SetValue", function(statusbar)
+							if statusbar and statusbar.backdrop then
+								statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
+								if statusbar.backdrop.SetBackdropColor ~= E.noop then
+									statusbar.backdrop:SetBackdropColor(0, 0, 0, E.db.general.backdropfadecolor.a)
+									statusbar.backdrop.SetBackdropColor = E.noop
+								end
+							end
+						end)
+						bar.EltruismHookedSetValue = true
+					end
+
+					local parent = bar:GetParent()
+					if parent and not parent.EltruismHookedProgress then
+						if parent.SetPercent then
+							hooksecurefunc(parent, "SetPercent", function(frame)
+								local statusbar = frame.Bar
+								if statusbar and statusbar.backdrop then
+									statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
+									if statusbar.backdrop.SetBackdropColor ~= E.noop then
+										statusbar.backdrop:SetBackdropColor(0, 0, 0, E.db.general.backdropfadecolor.a)
+										statusbar.backdrop.SetBackdropColor = E.noop
+									end
+								end
+							end)
+							parent.EltruismHookedProgress = true
+						end
+						if parent.SetValue then
+							hooksecurefunc(parent, "SetValue", function(frame)
+								local statusbar = frame.Bar
+								if statusbar and statusbar.backdrop then
+									statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
+									if statusbar.backdrop.SetBackdropColor ~= E.noop then
+										statusbar.backdrop:SetBackdropColor(0, 0, 0, E.db.general.backdropfadecolor.a)
+										statusbar.backdrop.SetBackdropColor = E.noop
+									end
+								end
+							end)
+							parent.EltruismHookedProgress = true
+						end
+					end
+
+					bar.EltruismSkin = true
 				end
 
 				local function subLines(line)
@@ -418,7 +554,7 @@ function ElvUI_EltreumUI:SkinQuests()
 										line.Text:SetTextColor(1, 1, 1)
 									end
 								else
-									if text == _G.QUEST_WATCH_QUEST_READY or (line.Check and line.Check:IsShown()) or (line.objectiveKey == "QuestComplete") then
+									if text == QUEST_WATCH_QUEST_READY or (line.Check and line.Check:IsShown()) or (line.objectiveKey == "QuestComplete") then
 										line.Text:SetTextColor(0.12, 1, 0.12)
 									else
 										line.Text:SetTextColor(1, 1, 1)
@@ -531,7 +667,7 @@ function ElvUI_EltreumUI:SkinQuests()
 										line.Text:SetTextColor(1, 1, 1)
 									end
 								else
-									if text == _G.QUEST_WATCH_QUEST_READY or (line.Check and line.Check:IsShown()) or (line.objectiveKey == "QuestComplete") then
+									if text == QUEST_WATCH_QUEST_READY or (line.Check and line.Check:IsShown()) or (line.objectiveKey == "QuestComplete") then
 										line.Text:SetTextColor(0.12, 1, 0.12)
 									else
 										line.Text:SetTextColor(1, 1, 1)
@@ -555,13 +691,21 @@ function ElvUI_EltreumUI:SkinQuests()
 
 				local function blockenter(block)
 					if not block then return end
-					if ( block.HeaderText ) then
-						if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
-							block.HeaderText:SetTextColor(E.db.ElvUI_EltreumUI.skins.questsettings.customr, E.db.ElvUI_EltreumUI.skins.questsettings.customg, E.db.ElvUI_EltreumUI.skins.questsettings.customb)
-							block.HeaderText.colorStyle = {r = E.db.ElvUI_EltreumUI.skins.questsettings.customr, g = E.db.ElvUI_EltreumUI.skins.questsettings.customg, b = E.db.ElvUI_EltreumUI.skins.questsettings.customb}
+					if block.HeaderText then
+						if E.Forever then
+							ApplyCustomTitleColor(block.HeaderText, mult)
 						else
-							block.HeaderText:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
-							block.HeaderText.colorStyle = {r = classcolor.r, g = classcolor.g, b = classcolor.b}
+							if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
+								block.HeaderText:SetTextColor(
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb)
+							else
+								block.HeaderText:SetTextColor(
+									mult * classcolor.r,
+									mult * classcolor.g,
+									mult * classcolor.b)
+							end
 						end
 					end
 					if block.currentLine then --this is the text
@@ -574,7 +718,7 @@ function ElvUI_EltreumUI:SkinQuests()
 								end
 							else -- its the subtext
 								local text = line.Text:GetText()
-								if text == _G.QUEST_WATCH_QUEST_READY then
+								if text == QUEST_WATCH_QUEST_READY then
 									block.currentLine.Text:SetTextColor(0, 1, 0)
 									if line.Text.colorStyle then
 										line.Text.colorStyle = {r = 0, g = 1, b = 0}
@@ -613,13 +757,21 @@ function ElvUI_EltreumUI:SkinQuests()
 
 				local function blockexit(block)
 					if not block then return end
-					if ( block.HeaderText ) then
-						if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
-							block.HeaderText:SetTextColor(mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr, mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg, mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb)
-							block.HeaderText.colorStyle = {r = mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr, g = mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg, b = mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb}
+					if block.HeaderText then
+						if E.Forever then
+							ApplyCustomTitleColor(block.HeaderText, mult)
 						else
-							block.HeaderText:SetTextColor(mult * classcolor.r, mult * classcolor.g, mult * classcolor.b)
-							block.HeaderText.colorStyle = { r = mult * classcolor.r, g = mult * classcolor.g, b = mult * classcolor.b }
+							if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
+								block.HeaderText:SetTextColor(
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb)
+							else
+								block.HeaderText:SetTextColor(
+									mult * classcolor.r,
+									mult * classcolor.g,
+									mult * classcolor.b)
+							end
 						end
 					end
 					if block.currentLine then
@@ -632,7 +784,7 @@ function ElvUI_EltreumUI:SkinQuests()
 								end
 							else -- its the subtext
 								local text = line.Text:GetText()
-								if text == _G.QUEST_WATCH_QUEST_READY then
+								if text == QUEST_WATCH_QUEST_READY then
 									block.currentLine.Text:SetTextColor(0.12, 1, 0.12)
 									if line.Text.colorStyle then
 										line.Text.colorStyle = {r = 0.12, g = 1, b = 0.12}
@@ -681,14 +833,53 @@ function ElvUI_EltreumUI:SkinQuests()
 					_G.WorldQuestObjectiveTracker,
 					_G.ObjectiveTrackerFrame,
 					_G.UIWidgetObjectiveTracker,
+					_G.InitiativeTasksObjectiveTracker,
 				}
+
+				local function hookTrackerProgressBars(tracker)
+					if not tracker then return end
+					if tracker.GetProgressBar and not tracker.EltruismProgressBarHook then
+						hooksecurefunc(tracker, "GetProgressBar", function(t, key)
+							local progress = t.usedProgressBars and t.usedProgressBars[key]
+							if progress and progress.Bar then
+								EltreumSkinProgressBars(progress.Bar)
+							end
+						end)
+						tracker.EltruismProgressBarHook = true
+					end
+					if tracker.GetTimerBar and not tracker.EltruismTimerBarHook then
+						hooksecurefunc(tracker, "GetTimerBar", function(t, key)
+							local progress = t.usedTimerBars and t.usedTimerBars[key]
+							if progress and progress.Bar then
+								EltreumSkinProgressBars(progress.Bar)
+							end
+						end)
+						tracker.EltruismTimerBarHook = true
+					end
+					if tracker.usedProgressBars then
+						for _, progress in pairs(tracker.usedProgressBars) do
+							if progress and progress.Bar then
+								EltreumSkinProgressBars(progress.Bar)
+							end
+						end
+					end
+					if tracker.usedTimerBars then
+						for _, progress in pairs(tracker.usedTimerBars) do
+							if progress and progress.Bar then
+								EltreumSkinProgressBars(progress.Bar)
+							end
+						end
+					end
+				end
+
 				for _, module in pairs(questmodules) do
+					hookTrackerProgressBars(module)
 					if module and module.Header then
 
 						--the big type of quest
 						if module.Header.Text and not module.Header.EltruismFont then
 							if not ElvUI_EltreumUI:SLCheck('quest') then
-								if module.Header.Text:GetText() ~= _G.TRACKER_ALL_OBJECTIVES then
+								if module.Header.Text:GetText() ~= TRACKER_ALL_OBJECTIVES then
 									module.Header.Text:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 								else
 									module.Header.Text:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader/1.5, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -706,7 +897,7 @@ function ElvUI_EltreumUI:SkinQuests()
 						--create the lines
 						if not module.Header.EltruismStatusLine and not ElvUI_EltreumUI:SLCheck('quest') then
 							if module.Header.Text and module.Header.Text:GetText() ~= nil then
-								if module.Header.Text:GetText() ~= _G.TRACKER_ALL_OBJECTIVES then
+								if module.Header.Text:GetText() ~= TRACKER_ALL_OBJECTIVES then
 									module.Header.EltruismStatusLine = CreateFrame("StatusBar", "Eltruism"..module.Header.Text:GetText().."Line", module.Header)
 								end
 							end
@@ -741,17 +932,27 @@ function ElvUI_EltreumUI:SkinQuests()
 				local function blockskin(block)
 					block:UnregisterEvent("ADDON_ACTION_FORBIDDEN")
 					block:UnregisterEvent("ADDON_ACTION_BLOCKED")
-					if not block then
-						return
-					end
+					if not block or block.isSkinning then return end
+					block.isSkinning = true
 					if block.HeaderText then --quest title
 						block.HeaderText:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSize+1, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
-							block.HeaderText:SetTextColor(mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr, mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg, mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb)
-						else
-							block.HeaderText:SetTextColor(mult * classcolor.r, mult * classcolor.g, mult * classcolor.b)
-						end
 						block.HeaderText:SetWordWrap(true)
+						--print(block.HeaderText:GetText(),currentText) --E:StripString ?
+						if E.Forever then
+							ApplyCustomTitleColor(block.HeaderText, mult)
+						else
+							if E.db.ElvUI_EltreumUI.skins.questsettings.customcolor then
+								block.HeaderText:SetTextColor(
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customr,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customg,
+									mult * E.db.ElvUI_EltreumUI.skins.questsettings.customb)
+							else
+								block.HeaderText:SetTextColor(
+									mult * classcolor.r,
+									mult * classcolor.g,
+									mult * classcolor.b)
+							end
+						end
 					end
 					local itemButton = block.itemButton or block.ItemButton
 					if itemButton then
@@ -763,10 +964,10 @@ function ElvUI_EltreumUI:SkinQuests()
 							itemButton.HotKey:Kill()
 						end
 
-						if _G.ObjectiveFrameMover then
-							questside = _G.ObjectiveFrameMover:GetPoint()
+						if ObjectiveFrameMover then
+							questside = ObjectiveFrameMover:GetPoint()
 						else
-							questside = _G.ObjectiveTrackerFrame:GetPoint()
+							questside = ObjectiveTrackerFrame:GetPoint()
 						end
 						if questside:match("RIGHT") then
 							itemButton:ClearAllPoints()
@@ -790,9 +991,16 @@ function ElvUI_EltreumUI:SkinQuests()
 						end
 						usedLines(block)
 					end
+					if block.Bar then
+						EltreumSkinProgressBars(block.Bar)
+					end
+					if block.progressBar and block.progressBar.Bar then
+						EltreumSkinProgressBars(block.progressBar.Bar)
+					end
 					if block.lastRegion then
 						lastRegion(block)
 					end
+					block.isSkinning = nil
 				end
 
 				local function positionScenarioObjectiveBlockBackground()
@@ -810,9 +1018,9 @@ function ElvUI_EltreumUI:SkinQuests()
 					elseif _G.EltruismDelvesLine and _G.EltruismDelvesLine:IsVisible() then
 						ScenarioObjectiveBlockBackground:SetParent(_G.EltruismDelvesLine)
 						ScenarioObjectiveBlockBackground:SetPoint("CENTER", _G.EltruismDelvesLine, "CENTER", -3, -47)
-					elseif _G.ObjectiveTrackerBlocksFrame and _G.ObjectiveTrackerBlocksFrame.ScenarioHeader and _G.ObjectiveTratatusckerBlocksFrame.ScenarioHeader.EltruismStatusLine and _G.ObjectiveTratatusckerBlocksFrame.ScenarioHeader.EltruismStatusLine:IsVisible() then
-						ScenarioObjectiveBlockBackground:SetParent(_G.ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine)
-						ScenarioObjectiveBlockBackground:SetPoint("CENTER", _G.ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine, "CENTER", -3, -47)
+					elseif ObjectiveTrackerBlocksFrame and ObjectiveTrackerBlocksFrame.ScenarioHeader and ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine and ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine:IsVisible() then
+						ScenarioObjectiveBlockBackground:SetParent(ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine)
+						ScenarioObjectiveBlockBackground:SetPoint("CENTER", ObjectiveTrackerBlocksFrame.ScenarioHeader.EltruismStatusLine, "CENTER", -3, -47)
 					end
 					if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and not ScenarioObjectiveBlockBackground.shadow and E.private.general.pixelPerfect and not E.db.ElvUI_EltreumUI.borders.universalborders then
 						ScenarioObjectiveBlockBackground:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
@@ -827,6 +1035,9 @@ function ElvUI_EltreumUI:SkinQuests()
 					k:UnregisterEvent("ADDON_ACTION_FORBIDDEN")
 					if k.Bar then
 						EltreumSkinProgressBars(k.Bar)
+					end
+					if k.progressBar and k.progressBar.Bar then
+						EltreumSkinProgressBars(k.progressBar.Bar)
 					end
 					if k.UpdateHighlight and not k.UpdateHighlightHook then
 						hooksecurefunc(k, "UpdateHighlight", function(_, block)
@@ -846,25 +1057,30 @@ function ElvUI_EltreumUI:SkinQuests()
 						end)
 						k.OnHeaderLeaveHook = true
 					end
+					if k.SetHeader and not k.SetHeaderHook then
+						hooksecurefunc(k, "SetHeader", function(block)
+							blockskin(block)
+							k.SetHeaderHook = true
+						end)
+					end
 					if k.AddObjective and not k.AddObjectiveHook then
 						local function updateObjectiveCount()
 							--add quest count
-								if _G.QuestObjectiveTracker and _G.QuestObjectiveTracker.Header and _G.QuestObjectiveTracker.Header.Text then
-									--local NumQuests = select(2, _G.C_QuestLog.GetNumQuestLogEntries())
+								if QuestObjectiveTracker and QuestObjectiveTracker.Header and QuestObjectiveTracker.Header.Text then
+									--local NumQuests = select(2, C_QuestLog.GetNumQuestLogEntries())
 
 									--GetNumQuestLogEntries is returning higher numbers so remove 12 from it
 									--13 seemed correct but managed to hit 38/35
 									--turns out some quests count as more, as finishing a battle pet quest changed the total return by more than 1
 									--maybe some quests are returning higher values to reserve slots for following quests
-									local NumQuests = select(2, _G.C_QuestLog.GetNumQuestLogEntries()) - 15
+									local _, totalQuests = C_QuestLog.GetNumQuestLogEntries()
+									local NumQuests = E.Retail and math.ceil(totalQuests * 0.5) or totalQuests
 									if NumQuests < 0 then NumQuests = 0 end
-
-									--if (NumQuests >= (MAX_QUESTS - 5)) then --global still returning 25
 									if (NumQuests >= 30) then
-										--_G.ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
-										_G.QuestObjectiveTracker.Header.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, 35, _G.QUESTS_LABEL))
+										--ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
+										QuestObjectiveTracker.Header.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, numMAX_QUESTS, QUESTS_LABEL))
 									else
-										_G.QuestObjectiveTracker.Header.Text:SetText(_G.QUESTS_LABEL)
+										QuestObjectiveTracker.Header.Text:SetText(QUESTS_LABEL)
 									end
 								end
 							--C_QuestLog.SortQuestWatches() --fix lines when added
@@ -886,7 +1102,7 @@ function ElvUI_EltreumUI:SkinQuests()
 						hooksecurefunc(k, "Update", function(module)--availableHeight, dirtyUpdate)
 							if module and module.Header and module.Header.Text and not module.Header.EltruismFont then --the big type of quest
 								if not ElvUI_EltreumUI:SLCheck('quest') then
-									if module.Header.Text:GetText() ~= _G.TRACKER_ALL_OBJECTIVES then
+									if module.Header.Text:GetText() ~= TRACKER_ALL_OBJECTIVES then
 										module.Header.Text:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 									else
 										module.Header.Text:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSizeHeader/1.5, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -903,7 +1119,7 @@ function ElvUI_EltreumUI:SkinQuests()
 								--create the lines
 								if not module.Header.EltruismStatusLine and not ElvUI_EltreumUI:SLCheck('quest') then
 									if module.Header.Text and module.Header.Text:GetText() ~= nil then
-										if module.Header.Text:GetText() ~= _G.TRACKER_ALL_OBJECTIVES then
+										if module.Header.Text:GetText() ~= TRACKER_ALL_OBJECTIVES then
 											module.Header.EltruismStatusLine = CreateFrame("StatusBar", "Eltruism"..module.Header.Text:GetText().."Line", module.Header)
 										end
 									end
@@ -935,14 +1151,15 @@ function ElvUI_EltreumUI:SkinQuests()
 							end
 
 							--add quest count
-							if _G.QuestObjectiveTracker and _G.QuestObjectiveTracker.Header and _G.QuestObjectiveTracker.Header.Text then
-								local NumQuests = select(2, _G.C_QuestLog.GetNumQuestLogEntries())
-								--if (NumQuests >= (MAX_QUESTS - 5)) then --global still returning 25
+							if QuestObjectiveTracker and QuestObjectiveTracker.Header and QuestObjectiveTracker.Header.Text then
+								local _, totalQuests = C_QuestLog.GetNumQuestLogEntries()
+								local NumQuests = E.Retail and math.ceil(totalQuests * 0.5) or totalQuests
+								if NumQuests < 0 then NumQuests = 0 end
 								if (NumQuests >= 30) then
-									--_G.ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
-									_G.QuestObjectiveTracker.Header.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, 35, _G.QUESTS_LABEL))
+									--ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
+									QuestObjectiveTracker.Header.Text:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, numMAX_QUESTS, QUESTS_LABEL))
 								--else
-								--	_G.ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(QUESTS_LABEL)
+								--	ObjectiveTrackerBlocksFrame.QuestHeader.Text:SetText(QUESTS_LABEL)
 								end
 							end
 						end)
@@ -957,8 +1174,8 @@ function ElvUI_EltreumUI:SkinQuests()
 					end
 					if k.UpdateStageBlock and not k.UpdateStageBlockHook then
 						hooksecurefunc(k, "UpdateStageBlock", function()
-							if _G.ScenarioObjectiveTracker then
-								local frames = {_G.ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
+							if ScenarioObjectiveTracker then
+								local frames = {ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
 								for _, frame in pairs(frames) do
 									if frame.Stage then
 										frame.Stage:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSize+2, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -985,8 +1202,8 @@ function ElvUI_EltreumUI:SkinQuests()
 					end
 					if k.UpdateWidgetLayout and not UpdateWidgetLayoutHook then
 						hooksecurefunc(k, "UpdateWidgetLayout", function()
-							if _G.ScenarioObjectiveTracker then
-								local frames = {_G.ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
+							if ScenarioObjectiveTracker then
+								local frames = {ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
 								for _, frame in pairs(frames) do
 									if frame.Stage then
 										frame.Stage:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSize+2, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -1025,7 +1242,7 @@ function ElvUI_EltreumUI:SkinQuests()
 					if k.AddBlock and not k.AddBlockHook then
 						hooksecurefunc(k, "AddBlock", function(block)
 							blockskin(block)
-							blockskin(k)
+							--blockskin(k)
 						end)
 						k.AddBlockHook = true
 					end
@@ -1074,14 +1291,21 @@ function ElvUI_EltreumUI:SkinQuests()
 							end)
 							k.AddQuestHook = true
 						end
+						if k.SetHeader and not k.SetHeaderHook then
+							hooksecurefunc(k, "SetHeader", function(block)
+								blockskin(block)
+								k.SetHeaderHook = true
+							end)
+						end
+						hookTrackerProgressBars(k)
 					end
 				end
 				E:Delay(0,firehooks)
 
-				if _G.ScenarioObjectiveTracker and _G.ScenarioObjectiveTracker.UpdateCriteria then
-					hooksecurefunc(_G.ScenarioObjectiveTracker, "UpdateCriteria", function()
-						if _G.ScenarioObjectiveTracker and _G.ScenarioObjectiveTracker.ContentsFrame then
-							local frames = {_G.ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
+				if ScenarioObjectiveTracker and ScenarioObjectiveTracker.UpdateCriteria then
+					hooksecurefunc(ScenarioObjectiveTracker, "UpdateCriteria", function()
+						if ScenarioObjectiveTracker and ScenarioObjectiveTracker.ContentsFrame then
+							local frames = {ScenarioObjectiveTracker.ContentsFrame:GetChildren()}
 							for _, frame in pairs(frames) do
 								if frame.Text then
 									frame.Text:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle)) --this is the objective like boss 1/1
@@ -1113,38 +1337,14 @@ function ElvUI_EltreumUI:SkinQuests()
 									end
 								end
 								if frame.Bar then
-									if not frame.Bar.shadow then
-										frame.Bar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-										ElvUI_EltreumUI:ShadowColor(frame.Bar.shadow)
-									end
-									if frame.SetValue then
-										hooksecurefunc(frame, "SetValue", function(framebar)--,percent)
-											local statusbar = framebar.Bar
-											if not statusbar then return end
-											--S:StatusBarColorGradient(statusbar, percent, 100)
-											local r,g,b = statusbar:GetStatusBarColor()
-											statusbar:GetStatusBarTexture():SetGradient("HORIZONTAL", {r=r - 0.4,g= g - 0.4,b= b - 0.4,a= E.db.general.backdropfadecolor.a}, {r=r + 0.2,g= g + 0.2,b= b + 0.2,a= E.db.general.backdropfadecolor.a})
-											statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
-											statusbar.backdrop:SetBackdropColor(0,0,0)
-										end)
-									elseif frame.Bar.SetValue then
-										hooksecurefunc(frame.Bar, "SetValue", function(bar)--,percent)
-											local statusbar = bar
-											if not statusbar then return end
-											--S:StatusBarColorGradient(statusbar, percent, 100)
-											local r,g,b = statusbar:GetStatusBarColor()
-											statusbar:GetStatusBarTexture():SetGradient("HORIZONTAL", {r=r - 0.4,g= g - 0.4,b= b - 0.4,a= E.db.general.backdropfadecolor.a}, {r=r + 0.2,g= g + 0.2,b= b + 0.2,a= E.db.general.backdropfadecolor.a})
-											statusbar.backdrop:SetAlpha(E.db.general.backdropfadecolor.a)
-											statusbar.backdrop:SetBackdropColor(0,0,0)
-										end)
-									end
+									EltreumSkinProgressBars(frame.Bar)
 								end
 							end
 
-							if _G.ScenarioObjectiveTracker.StageBlock then
-								if _G.ScenarioObjectiveTracker.StageBlock.WidgetContainer then
-									if _G.ScenarioObjectiveTracker.StageBlock.WidgetContainer.widgetFrames then
-										for _,v in pairs(_G.ScenarioObjectiveTracker.StageBlock.WidgetContainer.widgetFrames) do
+							if ScenarioObjectiveTracker.StageBlock then
+								if ScenarioObjectiveTracker.StageBlock.WidgetContainer then
+									if ScenarioObjectiveTracker.StageBlock.WidgetContainer.widgetFrames then
+										for _,v in pairs(ScenarioObjectiveTracker.StageBlock.WidgetContainer.widgetFrames) do
 											if v.Frame then
 												v.Frame:SetAlpha(0)
 											end
@@ -1169,52 +1369,62 @@ function ElvUI_EltreumUI:SkinQuests()
 					--C_QuestLog.SortQuestWatches()
 				end)
 
-				hooksecurefunc(C_QuestLog, "AddQuestWatch", function()
-					E:Delay(0, function()
-						for _, k in pairs(questmodules) do
-							if k.ContentsFrame then
-								for _, v in pairs({k.ContentsFrame:GetChildren()}) do
-									if v then
-										v:UnregisterEvent("ADDON_ACTION_BLOCKED")
-										v:UnregisterEvent("ADDON_ACTION_FORBIDDEN")
-										blockskin(v)
-										if v.NormalBG then
-											v.NormalBG:Hide()
-											v.NormalBG:SetTexture()
-										end
-										if v.FinalBG then
-											v.FinalBG:Hide()
-											v.FinalBG:SetTexture()
-										end
+				local function UpdateQuestWatchModules()
+					for _, k in pairs(questmodules) do
+						if k.ContentsFrame then
+							for _, v in pairs({k.ContentsFrame:GetChildren()}) do
+								if v then
+									v:UnregisterEvent("ADDON_ACTION_BLOCKED")
+									v:UnregisterEvent("ADDON_ACTION_FORBIDDEN")
+									blockskin(v)
+									if v.NormalBG then
+										v.NormalBG:Hide()
+										v.NormalBG:SetTexture()
+									end
+									if v.FinalBG then
+										v.FinalBG:Hide()
+										v.FinalBG:SetTexture()
 									end
 								end
 							end
 						end
-						--C_QuestLog.SortQuestWatches()
-					end)
+					end
+					--C_QuestLog.SortQuestWatches()
+				end
+
+				hooksecurefunc(C_QuestLog, "AddQuestWatch", function()
+					E:Delay(0, UpdateQuestWatchModules)
 				end)
 			end
 		elseif E.Classic or E.TBC then
 			if IsAddOnLoaded('!KalielsTracker') or IsAddOnLoaded('SorhaQuestLog') or IsAddOnLoaded('ClassicQuestLog') or IsAddOnLoaded('Who Framed Watcher Wabbit?') then
 				return
 			end
+			local QuestLogNoQuestsText = _G.QuestLogNoQuestsText
+			local QuestLogFrame = _G.QuestLogFrame
+			local QuestLogTitleText = _G.QuestLogTitleText
+			local QuestLogListScrollFrame = _G.QuestLogListScrollFrame
+			local QuestLogDetailScrollFrame = _G.QuestLogDetailScrollFrame
+			local QuestWatchFrame = _G.QuestWatchFrame
+			local QuestWatchFrameMover = _G.QuestWatchFrameMover
+			local MAX_QUESTWATCH_LINES = _G.MAX_QUESTWATCH_LINES
 
 			--move the text for no quests
-			_G.QuestLogNoQuestsText:ClearAllPoints()
-			_G.QuestLogNoQuestsText:SetPoint("CENTER", _G.QuestLogFrame, 0, 0)
+			QuestLogNoQuestsText:ClearAllPoints()
+			QuestLogNoQuestsText:SetPoint("CENTER", QuestLogFrame, 0, 0)
 			--make the whole thing bigger almost like retail
-			_G.QuestLogFrame:SetWidth(765)
-			_G.QuestLogFrame:SetHeight(550)
+			QuestLogFrame:SetWidth(765)
+			QuestLogFrame:SetHeight(550)
 			--move the frame title
-			_G.QuestLogTitleText:ClearAllPoints()
-			_G.QuestLogTitleText:SetPoint("TOP", _G.QuestLogFrame, "TOP", 0, -20)
+			QuestLogTitleText:ClearAllPoints()
+			QuestLogTitleText:SetPoint("TOP", QuestLogFrame, "TOP", 0, -20)
 			--increase the size of the quest title frame
-			_G.QuestLogListScrollFrame:SetHeight(390)
-			_G.QuestLogListScrollFrame:SetWidth(350)
+			QuestLogListScrollFrame:SetHeight(390)
+			QuestLogListScrollFrame:SetWidth(350)
 			--increase the size of the quest description frame and move it
-			_G.QuestLogDetailScrollFrame:ClearAllPoints()
-			_G.QuestLogDetailScrollFrame:SetPoint("TOPLEFT", _G.QuestLogListScrollFrame, "TOPRIGHT", 35, 0)
-			_G.QuestLogDetailScrollFrame:SetHeight(390)
+			QuestLogDetailScrollFrame:ClearAllPoints()
+			QuestLogDetailScrollFrame:SetPoint("TOPLEFT", QuestLogListScrollFrame, "TOPRIGHT", 35, 0)
+			QuestLogDetailScrollFrame:SetHeight(390)
 
 			-- Create the additional rows
 			--local numQuests = QUESTS_DISPLAYED
@@ -1223,7 +1433,7 @@ function ElvUI_EltreumUI:SkinQuests()
 			_G.QUESTS_DISPLAYED = 24
 			if dontexpandanymorequests == 0 then
 				for i = numQuests + 1, 24 do
-					local questTitlebutton = CreateFrame("Button", "QuestLogTitle" .. i, _G.QuestLogFrame, "QuestLogTitleButtonTemplate")
+					local questTitlebutton = CreateFrame("Button", "QuestLogTitle" .. i, QuestLogFrame, "QuestLogTitleButtonTemplate")
 					questTitlebutton:SetID(i)
 					questTitlebutton:Hide()
 					questTitlebutton:ClearAllPoints()
@@ -1239,64 +1449,64 @@ function ElvUI_EltreumUI:SkinQuests()
 
 			--add quest header like retail/cata
 			if not _G["EltruismQuestLine"] then
-				_G.QuestWatchFrame.HeaderBar = CreateFrame("StatusBar", "EltruismQuestLine", _G.QuestWatchFrame)
-				_G.QuestWatchFrame.HeaderBar:SetMinMaxValues(0, 100)
-				_G.QuestWatchFrame.HeaderBar:SetValue(100)
+				QuestWatchFrame.HeaderBar = CreateFrame("StatusBar", "EltruismQuestLine", QuestWatchFrame)
+				QuestWatchFrame.HeaderBar:SetMinMaxValues(0, 100)
+				QuestWatchFrame.HeaderBar:SetValue(100)
 			else
-				_G.QuestWatchFrame.HeaderBar = _G["EltruismQuestLine"]
+				QuestWatchFrame.HeaderBar = _G["EltruismQuestLine"]
 			end
 
 			--add a minimize button
 			if not _G["EltruismMinimizeQuests"] then
-				_G.QuestWatchFrame.Minimize = CreateFrame("BUTTON", "EltruismMinimizeQuests", E.UIParent, "MaximizeMinimizeButtonFrameTemplate")
+				QuestWatchFrame.Minimize = CreateFrame("BUTTON", "EltruismMinimizeQuests", E.UIParent, "MaximizeMinimizeButtonFrameTemplate")
 				S:HandleMaxMinFrame(_G["EltruismMinimizeQuests"])
 				_G["EltruismMinimizeQuests"]:SetTemplate("Backdrop")
-				if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and not _G.QuestWatchFrame.Minimize.shadow and E.private.general.pixelPerfect then
-					_G.QuestWatchFrame.Minimize:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					ElvUI_EltreumUI:ShadowColor(_G.QuestWatchFrame.Minimize.shadow)
+				if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and not QuestWatchFrame.Minimize.shadow and E.private.general.pixelPerfect then
+					QuestWatchFrame.Minimize:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+					ElvUI_EltreumUI:ShadowColor(QuestWatchFrame.Minimize.shadow)
 				end
-				_G.QuestWatchFrame.Minimize.MaximizeButton:HookScript("OnClick",function()
-					_G.QuestWatchFrame:Show()
-					_G.QuestWatchFrame.isHidden = false
+				QuestWatchFrame.Minimize.MaximizeButton:HookScript("OnClick",function()
+					QuestWatchFrame:Show()
+					QuestWatchFrame.isHidden = false
 				end)
-				_G.QuestWatchFrame.Minimize.MinimizeButton:HookScript("OnClick",function()
-					_G.QuestWatchFrame:Hide()
-					_G.QuestWatchFrame.isHidden = true
+				QuestWatchFrame.Minimize.MinimizeButton:HookScript("OnClick",function()
+					QuestWatchFrame:Hide()
+					QuestWatchFrame.isHidden = true
 				end)
 			else
-				_G.QuestWatchFrame.Minimize = _G["EltruismMinimizeQuests"]
+				QuestWatchFrame.Minimize = _G["EltruismMinimizeQuests"]
 			end
 
-			_G.QuestWatchFrame.HeaderBar:SetSize(E.db.ElvUI_EltreumUI.skins.questsettings.sizex, E.db.ElvUI_EltreumUI.skins.questsettings.sizey)
+			QuestWatchFrame.HeaderBar:SetSize(E.db.ElvUI_EltreumUI.skins.questsettings.sizex, E.db.ElvUI_EltreumUI.skins.questsettings.sizey)
 			if E.db.general.objectiveTracker then
-				_G.QuestWatchFrame.HeaderBar:SetPoint("TOP", _G.QuestWatchFrameMover, "TOP", 0, 0)
+				QuestWatchFrame.HeaderBar:SetPoint("TOP", QuestWatchFrameMover, "TOP", 0, 0)
 			else
-				_G.QuestWatchFrame.HeaderBar:SetPoint("TOP", _G.QuestWatchFrame, "TOP", 0, 0)
+				QuestWatchFrame.HeaderBar:SetPoint("TOP", QuestWatchFrame, "TOP", 0, 0)
 			end
-			_G.QuestWatchFrame.HeaderBar:SetStatusBarTexture(E.LSM:Fetch("statusbar", E.db.ElvUI_EltreumUI.skins.questsettings.texture))
+			QuestWatchFrame.HeaderBar:SetStatusBarTexture(E.LSM:Fetch("statusbar", E.db.ElvUI_EltreumUI.skins.questsettings.texture))
 
-			_G.QuestWatchFrame.Minimize:SetSize(15,15)
-			_G.QuestWatchFrame.Minimize:SetPoint("BOTTOMRIGHT", _G.QuestWatchFrame.HeaderBar, "TOPRIGHT", 0, 10)
+			QuestWatchFrame.Minimize:SetSize(15,15)
+			QuestWatchFrame.Minimize:SetPoint("BOTTOMRIGHT", QuestWatchFrame.HeaderBar, "TOPRIGHT", 0, 10)
 
-			--_G.QuestWatchFrame.HeaderBar:SetStatusBarColor(classcolor.r, classcolor.g, classcolor.b)
+			--QuestWatchFrame.HeaderBar:SetStatusBarColor(classcolor.r, classcolor.g, classcolor.b)
 			if not E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor then
 				if E.db.ElvUI_EltreumUI.unitframes.gradientmode.customcolor or E.db.ElvUI_EltreumUI.unitframes.gradientmode.npcustomcolor then
-					_G.QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsCustom(E.myclass))
+					QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsCustom(E.myclass))
 				else
-					_G.QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColors(E.myclass))
+					QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColors(E.myclass))
 				end
 			else
-				_G.QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, {r = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1r,g = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1g, b = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1b, a = 1},{r= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2r,g= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2g,b= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2b, a = 1})
+				QuestWatchFrame.HeaderBar:GetStatusBarTexture():SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, {r = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1r,g = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1g, b = E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor1b, a = 1},{r= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2r,g= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2g,b= E.db.ElvUI_EltreumUI.skins.questsettings.linecustomcolor2b, a = 1})
 			end
 			if E.db.ElvUI_EltreumUI.skins.questsettings.lineshadow and not _G["EltruismQuestLine"].shadow and E.private.general.pixelPerfect then
-				_G.QuestWatchFrame.HeaderBar:CreateBackdrop('Transparent')
-				_G.QuestWatchFrame.HeaderBar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-				ElvUI_EltreumUI:ShadowColor(_G.QuestWatchFrame.HeaderBar.shadow)
+				QuestWatchFrame.HeaderBar:CreateBackdrop('Transparent')
+				QuestWatchFrame.HeaderBar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+				ElvUI_EltreumUI:ShadowColor(QuestWatchFrame.HeaderBar.shadow)
 			end
-			local InvisFrameHeaderBar = CreateFrame("Frame", nil, _G.QuestWatchFrame.HeaderBar)
-			InvisFrameHeaderBar:SetFrameLevel(_G.QuestWatchFrame.HeaderBar:GetFrameLevel() + 10)
+			local InvisFrameHeaderBar = CreateFrame("Frame", nil, QuestWatchFrame.HeaderBar)
+			InvisFrameHeaderBar:SetFrameLevel(QuestWatchFrame.HeaderBar:GetFrameLevel() + 10)
 			InvisFrameHeaderBar:SetInside()
-			local QuestWatchFrameTitle = _G.QuestWatchFrame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+			local QuestWatchFrameTitle = QuestWatchFrame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
 			QuestWatchFrameTitle:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.questsettings.fontSize+3, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			if E.db.ElvUI_EltreumUI.skins.questsettings.customcolortitle then
 				QuestWatchFrameTitle:SetTextColor(E.db.ElvUI_EltreumUI.skins.questsettings.customrtitle, E.db.ElvUI_EltreumUI.skins.questsettings.customgtitle, E.db.ElvUI_EltreumUI.skins.questsettings.custombtitle)
@@ -1307,27 +1517,27 @@ function ElvUI_EltreumUI:SkinQuests()
 			QuestWatchFrameTitle:ClearAllPoints()
 			QuestWatchFrameTitle:SetPoint("LEFT", InvisFrameHeaderBar, 6, 8)
 
-			--from blizzard's FrameXML/_G.QuestLogFrame.lua
+			--from blizzard's FrameXML/QuestLogFrame.lua
 			--skin the classic objective frame
 			hooksecurefunc("QuestWatch_Update",function()
 
 				local NumQuests = select(2, GetNumQuestLogEntries())
-				if (NumQuests >= (_G.MAX_QUESTS - 5)) then
-					QuestWatchFrameTitle:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, _G.MAX_QUESTS, _G.QUESTS_LABEL))
+				if (NumQuests >= (MAX_QUESTS - 5)) then
+					QuestWatchFrameTitle:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
 				else
-					QuestWatchFrameTitle:SetText(_G.QUESTS_LABEL)
+					QuestWatchFrameTitle:SetText(QUESTS_LABEL)
 				end
 				if (GetNumQuestWatches() == 0) then
-					_G.QuestWatchFrame.HeaderBar:SetAlpha(0)
+					QuestWatchFrame.HeaderBar:SetAlpha(0)
 				else
-					_G.QuestWatchFrame.HeaderBar:SetAlpha(1)
+					QuestWatchFrame.HeaderBar:SetAlpha(1)
 				end
 
 				--hide/show minimize depending on having tracked quests
 				if GetNumQuestWatches() == 0 then
-					_G.QuestWatchFrame.Minimize:Hide()
+					QuestWatchFrame.Minimize:Hide()
 				else
-					_G.QuestWatchFrame.Minimize:Show()
+					QuestWatchFrame.Minimize:Show()
 				end
 
 				local numObjectives
@@ -1448,30 +1658,31 @@ function ElvUI_EltreumUI:SkinQuests()
 
 				-- If no watch lines used then hide the frame and return
 				if ( watchTextIndex == 1 ) then
-					_G.QuestWatchFrame:Hide()
+					QuestWatchFrame:Hide()
 					return
 				else
-					_G.QuestWatchFrame:Show()
-					_G.QuestWatchFrame:SetHeight(watchTextIndex * 13)
-					_G.QuestWatchFrame:SetWidth(questWatchMaxWidth + 10)
+					QuestWatchFrame:Show()
+					QuestWatchFrame:SetHeight(watchTextIndex * 13)
+					QuestWatchFrame:SetWidth(questWatchMaxWidth + 10)
 				end
 
 				-- Hide unused watch lines
-				for i=watchTextIndex, _G.MAX_QUESTWATCH_LINES do
+				for i=watchTextIndex, MAX_QUESTWATCH_LINES do
 					_G["QuestWatchLine"..i]:Hide()
 				end
 
-				if _G.QuestWatchFrame.isHidden then
-					_G.QuestWatchFrame:Hide()
+				if QuestWatchFrame.isHidden then
+					QuestWatchFrame:Hide()
 				end
 
 				UIParent_ManageFramePositions()
 			end)
 		elseif E.Mists or E.Wrath then
+			local ObjectiveFrameMover = _G.ObjectiveFrameMover
 
 			--from blizzard's FrameXML/WatchFrame.lua
-			if _G.ObjectiveFrameMover then
-				questside = _G.ObjectiveFrameMover:GetPoint()
+			if ObjectiveFrameMover then
+				questside = ObjectiveFrameMover:GetPoint()
 			else
 				questside = "RIGHT"
 			end
@@ -1603,10 +1814,10 @@ function ElvUI_EltreumUI:SkinQuests()
 
 				local NumQuests = select(2, GetNumQuestLogEntries())
 
-				if (NumQuests >= (_G.MAX_QUESTS - 5)) then
-					WatchFrameTitle:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, _G.MAX_QUESTS, _G.QUESTS_LABEL))
+				if (NumQuests >= (MAX_QUESTS - 5)) then
+					WatchFrameTitle:SetText(format("|CFFFF0000%d/%d|r - %s", NumQuests, MAX_QUESTS, QUESTS_LABEL))
 				else
-					WatchFrameTitle:SetText(_G.QUESTS_LABEL)
+					WatchFrameTitle:SetText(QUESTS_LABEL)
 				end
 
 				if (GetNumQuestWatches() == 0) then
@@ -1728,13 +1939,15 @@ function ElvUI_EltreumUI:SkinQuests()
 				_G["WatchFrameCollapseExpandButton"]:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
 			end)
 
+			local function UpdateWatchFrameCollapseButton()
+				_G["WatchFrameCollapseExpandButton"]:GetNormalTexture():SetTexture("Interface\\Addons\\ElvUI\\Game\\Shared\\Media\\Textures\\MinusButton")
+				_G["WatchFrameCollapseExpandButton"]:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
+				_G["WatchFrameCollapseExpandButton"]:GetPushedTexture():SetTexture("Interface\\Addons\\ElvUI\\Game\\Shared\\Media\\Textures\\MinusButton")
+				_G["WatchFrameCollapseExpandButton"]:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
+			end
+
 			_G["WatchFrameCollapseExpandButton"]:HookScript("OnShow", function()
-				E:Delay(0, function()
-					_G["WatchFrameCollapseExpandButton"]:GetNormalTexture():SetTexture("Interface\\Addons\\ElvUI\\Game\\Shared\\Media\\Textures\\MinusButton")
-					_G["WatchFrameCollapseExpandButton"]:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
-					_G["WatchFrameCollapseExpandButton"]:GetPushedTexture():SetTexture("Interface\\Addons\\ElvUI\\Game\\Shared\\Media\\Textures\\MinusButton")
-					_G["WatchFrameCollapseExpandButton"]:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
-				end)
+				E:Delay(0, UpdateWatchFrameCollapseButton)
 			end)
 
 			--highlight
@@ -1829,12 +2042,12 @@ function ElvUI_EltreumUI:ObjectiveTrackerAnchor()
 				ObjectiveTrackerFrame.NineSlice:Hide()
 			end
 
-			_G.ObjectiveTrackerFrame:SetClampedToScreen(false)
-			_G.ObjectiveTrackerFrame:SetMovable(true)
-			_G.ObjectiveTrackerFrame:SetUserPlaced(true) -- UIParent.lua line 3090 stops it from being moved <
-			_G.ObjectiveTrackerFrame:ClearAllPoints()
-			_G.ObjectiveTrackerFrame:SetPoint("TOP", holder, "TOP")
-			_G.ObjectiveTrackerFrame:SetPoint("BOTTOM", holder, "BOTTOM")
+			ObjectiveTrackerFrame:SetClampedToScreen(false)
+			ObjectiveTrackerFrame:SetMovable(true)
+			ObjectiveTrackerFrame:SetUserPlaced(true) -- UIParent.lua line 3090 stops it from being moved <
+			ObjectiveTrackerFrame:ClearAllPoints()
+			ObjectiveTrackerFrame:SetPoint("TOP", holder, "TOP")
+			ObjectiveTrackerFrame:SetPoint("BOTTOM", holder, "BOTTOM")
 			E:CreateMover(holder, "ObjectiveFrameMover", L["Objective Frame"], nil, nil, nil, "ALL,GENERAL", nil, 'ElvUI_EltreumUI,quests')
 
 			ElvUI_EltreumUI:UpdateObjectiveTrackerHeight()
@@ -1847,19 +2060,19 @@ function ElvUI_EltreumUI:ObjectiveTrackerAnchor()
 				ObjectiveTrackerFrame.NineSlice:SetAlpha(0)
 				ObjectiveTrackerFrame.NineSlice:Hide()
 			end
-			_G.ObjectiveTrackerFrame:SetClampedToScreen(false)
-			_G.ObjectiveTrackerFrame:SetMovable(true)
-			_G.ObjectiveTrackerFrame:SetUserPlaced(true) -- UIParent.lua line 3090 stops it from being moved <
-			_G.ObjectiveTrackerFrame:ClearAllPoints()
-			_G.ObjectiveTrackerFrame:SetPoint("TOP", _G["ObjectiveFrameHolder"], "TOP")
-			_G.ObjectiveTrackerFrame:SetPoint("BOTTOM", _G["ObjectiveFrameHolder"], "BOTTOM")
+			ObjectiveTrackerFrame:SetClampedToScreen(false)
+			ObjectiveTrackerFrame:SetMovable(true)
+			ObjectiveTrackerFrame:SetUserPlaced(true) -- UIParent.lua line 3090 stops it from being moved <
+			ObjectiveTrackerFrame:ClearAllPoints()
+			ObjectiveTrackerFrame:SetPoint("TOP", _G["ObjectiveFrameHolder"], "TOP")
+			ObjectiveTrackerFrame:SetPoint("BOTTOM", _G["ObjectiveFrameHolder"], "BOTTOM")
 			ElvUI_EltreumUI:UpdateObjectiveTrackerHeight()
 		end
 	end
 end
 
 --because the objective is removed from frame manager, when swapping to another layout that isnt it can error when trying to export it, so break it from manager again
-if E.Retail then
+if E.Modern then
 	E.PopupDialogs["EDITMODEBEINGSPAMMED"] = {
 		text = "Edit Mode is being spammed by BetterCooldownManager, if you have issues please report to its author.",
 		button1 = _G.ACCEPT,

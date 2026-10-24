@@ -3,7 +3,6 @@ local S = E:GetModule('Skins')
 local _G = _G
 local select = _G.select
 local CreateFrame = _G.CreateFrame
-local IsInInstance = _G.IsInInstance
 local IsInGroup = _G.IsInGroup
 local PlaySoundFile = _G.PlaySoundFile
 local GetInstanceInfo = _G.GetInstanceInfo
@@ -22,6 +21,7 @@ local GetTime = _G.GetTime
 local COMBATLOG_OBJECT_TYPE_PLAYER = _G.COMBATLOG_OBJECT_TYPE_PLAYER
 local COMBATLOG_OBJECT_AFFILIATION_PARTY = _G.COMBATLOG_OBJECT_AFFILIATION_PARTY
 local COMBATLOG_OBJECT_AFFILIATION_RAID = _G.COMBATLOG_OBJECT_AFFILIATION_RAID
+local type = _G.type
 
 --PlaySound(61850)
 --PlaySound(61851)
@@ -32,19 +32,19 @@ local COMBATLOG_OBJECT_AFFILIATION_RAID = _G.COMBATLOG_OBJECT_AFFILIATION_RAID
 -- Conversion of the party/raid death weakaura into an addon option
 local deaththrottle
 function ElvUI_EltreumUI:RaidDeathGroupCheck()
-	local _, instanceType = IsInInstance()
+	local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 	if E.db.ElvUI_EltreumUI.otherstuff.partyraiddeath.enable then
 		if IsInGroup() then
 			if E.db.ElvUI_EltreumUI.otherstuff.partyraiddeath.bgdisable then --to disable it in arena/bg
 				if instanceType == "arena" or instanceType == "pvp" then
-					if E.Retail then
+					if E.Modern then
 						ElvUI_EltreumUI:UnregisterEvent('UNIT_DIED')
 					else
 						ElvUI_EltreumUI:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 					end
 				else
 					deaththrottle = 1
-					if E.Retail then
+					if E.Modern then
 						ElvUI_EltreumUI:RegisterEvent('UNIT_DIED')
 					else
 						ElvUI_EltreumUI:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED') --for ElvUI_EltreumUI:RaidDeath()
@@ -52,7 +52,7 @@ function ElvUI_EltreumUI:RaidDeathGroupCheck()
 				end
 			else
 				deaththrottle = 1
-				if E.Retail then
+				if E.Modern then
 					ElvUI_EltreumUI:RegisterEvent('UNIT_DIED')
 				else
 					ElvUI_EltreumUI:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED') --for ElvUI_EltreumUI:RaidDeath()
@@ -60,7 +60,7 @@ function ElvUI_EltreumUI:RaidDeathGroupCheck()
 			end
 		elseif not IsInGroup() then
 			deaththrottle = 0
-			if E.Retail then
+			if E.Modern then
 				ElvUI_EltreumUI:UnregisterEvent('UNIT_DIED')
 			else
 				ElvUI_EltreumUI:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED') --for ElvUI_EltreumUI:RaidDeath() to not fire when not in a group
@@ -78,7 +78,7 @@ function ElvUI_EltreumUI:RaidDeath(destFlags)
 	if ElvUI_EltreumUI:EncounterCheck() then return end
 	if E.db.ElvUI_EltreumUI.otherstuff.partyraiddeath.enable then
 		if deaththrottle == 1 then
-			if E.Retail then
+			if E.Modern then
 				PlaySoundFile(deathsound , "Master")
 			else
 				if bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0 then
@@ -109,7 +109,7 @@ spellcd:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.general.fontSize + 
 spellcd:SetTextColor(1, 1, 1)
 spellcd:SetText(_G.READY)
 bresframe:SetPoint("TOPLEFT", E.UIParent, "TOPLEFT", 342, -28)
-if E.Retail then
+if E.Modern then
 	E:CreateMover(bresframe, "MoverEltruismBRES", "EltruismBattleRes", nil, nil, nil, "ALL,PARTY,RAID,ELTREUMUI", nil, 'ElvUI_EltreumUI,party')
 end
 bresframe:SetParent(E.UIParent)
@@ -120,6 +120,7 @@ S:HandleFrame(bresframe)
 
 local TimeSinceLastUpdate = 0
 local ONUPDATE_INTERVAL = 1
+
 local workingIDs = {
 	[3] = true, --10man
 	[4] = true, --25 man
@@ -141,12 +142,46 @@ local workingIDs = {
 }
 local difficultyok = false
 local instanceok = false
+
+function ElvUI_EltreumUI:BattleResOnUpdate(elapsed)
+	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
+	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+		TimeSinceLastUpdate = 0
+		--currentCharges, maxCharges, cooldownStart, cooldownDuration, chargeModRate = GetSpellCharges(spellId or spellName)
+		local currentCharges, _, cooldownStart, cooldownDuration = GetSpellCharges(20484)
+		if currentCharges ~= nil and cooldownStart ~= nil and cooldownDuration ~= nil then
+			bresframe:SetAlpha(1)
+			local cooldown = math.floor(cooldownDuration - (GetTime() - cooldownStart))
+			if cooldown <= 0 then
+				spellcd:SetText(_G.READY)
+			else
+				if cooldown > 60 then
+					--from https://github.com/tomrus88/BlizzardInterfaceCode/blob/master/Interface/FrameXML/LFGList.lua#L2551, https://www.wowinterface.com/forums/showthread.php?t=36884
+					spellcd:SetFormattedText("%d:%.2d", cooldown/60, cooldown%60)
+				elseif cooldown < 60 then
+					spellcd:SetText(cooldown)
+				end
+			end
+			spellcount:SetText(currentCharges)
+			if currentCharges == 0 then
+				spellcount:SetTextColor(1, 0, 0)
+				spellicon:SetDesaturated(true)
+			else
+				spellcount:SetTextColor(1, 1, 1)
+				spellicon:SetDesaturated(false)
+			end
+		elseif currentCharges == nil then
+			bresframe:SetAlpha(0)
+			--spellcd:SetText(READY)
+			--spellicon:SetDesaturated(true)
+		end
+	end
+end
+
 function ElvUI_EltreumUI:BattleRes()
-	if E.Retail and E.db.ElvUI_EltreumUI.otherstuff.bres then
-		local _, instanceType = IsInInstance()
+	if E.Modern and E.db.ElvUI_EltreumUI.otherstuff.bres then
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		local DifficultyID = select(3, GetInstanceInfo())
-
-
 
 		if workingIDs[DifficultyID] then
 			difficultyok = true
@@ -183,160 +218,18 @@ function ElvUI_EltreumUI:BattleRes()
 
 		if IsInGroup() and instanceok and difficultyok then
 			bresframe:SetAlpha(1)
-			bresframe:SetScript('OnUpdate', function(_, elapsed)
-				TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-				if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
-					TimeSinceLastUpdate = 0
-					--currentCharges, maxCharges, cooldownStart, cooldownDuration, chargeModRate = GetSpellCharges(spellId or spellName)
-					local currentCharges, _, cooldownStart, cooldownDuration = GetSpellCharges(20484)
-					if currentCharges ~= nil and cooldownStart ~= nil and cooldownDuration ~= nil then
-						bresframe:SetAlpha(1)
-						local cooldown = math.floor(cooldownDuration - (GetTime() - cooldownStart))
-						if cooldown <= 0 then
-							spellcd:SetText(_G.READY)
-						else
-							if cooldown > 60 then
-								--from https://github.com/tomrus88/BlizzardInterfaceCode/blob/master/Interface/FrameXML/LFGList.lua#L2551, https://www.wowinterface.com/forums/showthread.php?t=36884
-								spellcd:SetFormattedText("%d:%.2d", cooldown/60, cooldown%60)
-							elseif cooldown < 60 then
-								spellcd:SetText(cooldown)
-							end
-						end
-						spellcount:SetText(currentCharges)
-						if currentCharges == 0 then
-							spellcount:SetTextColor(1, 0, 0)
-							spellicon:SetDesaturated(true)
-						else
-							spellcount:SetTextColor(1, 1, 1)
-							spellicon:SetDesaturated(false)
-						end
-					elseif currentCharges == nil then
-						bresframe:SetAlpha(0)
-						--spellcd:SetText(READY)
-						--spellicon:SetDesaturated(true)
-					end
-				end
-			end)
+			bresframe:SetScript('OnUpdate', ElvUI_EltreumUI.BattleResOnUpdate)
 		else
 			bresframe:SetScript('OnUpdate', nil)
 		end
 	end
 end
 
---set correct role for classic
---[[local isTank, isHealer, isDPS = false,false,false
-function ElvUI_EltreumUI:SetGroupRoleClassic()
-	if E.Mists or E.TBC or E.Wrath and not InCombatLockdown() then
-		if UnitGroupRolesAssigned("player") == "DAMAGER" then
-			isDPS = true
-			isTank = false
-			isHealer = false
-		elseif UnitGroupRolesAssigned("player") == "TANK" then
-			isTank = true
-			isDPS = false
-			isHealer = false
-		elseif UnitGroupRolesAssigned("player") == "HEALER" then
-			isHealer = true
-			isTank = false
-			isDPS = false
-		end
-		if E.myclass == 'WARLOCK' or E.myclass == 'MAGE' or E.myclass == 'HUNTER' or E.myclass == 'ROGUE' then
-			if not isDPS then
-				UnitSetRole("player","DAMAGER")
-			end
-		else
-			local _, _, _, _, spent1 = _G.GetTalentTabInfo(1) --GetTalentTabInfo is going to be removed, use C_SpecializationInfo.GetSpecializationInfo instead TODO
-			local _, _, _, _, spent2 = _G.GetTalentTabInfo(2) --GetTalentTabInfo is going to be removed, use C_SpecializationInfo.GetSpecializationInfo instead TODO
-			local _, _, _, _, spent3 = _G.GetTalentTabInfo(3) --GetTalentTabInfo is going to be removed, use C_SpecializationInfo.GetSpecializationInfo instead TODO
-			--print(isDPS,isTank,isHealer,E.myclass,spent1,spent2,spent3)
-			if E.myclass == 'SHAMAN' then
-				if spent3 < spent1 and spent3 < spent2 then
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				elseif spent3 > spent1 and spent3 > spent2 then
-					if not isHealer then
-						UnitSetRole("player","HEALER")
-					end
-				end
-			elseif E.myclass == 'PRIEST' then
-				if spent1 > spent3 and spent2 > spent3 then
-					if not isHealer then
-						UnitSetRole("player","HEALER")
-					end
-				elseif spent3 > spent1 and spent3 > spent2 then
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				end
-			elseif E.myclass == 'DRUID' then
-				if spent3 > spent1 and spent3 > spent2 then
-					if not isHealer then
-						UnitSetRole("player","HEALER")
-					end
-				elseif spent1 > spent3 and spent1 > spent2 then
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				end
-			elseif E.myclass == 'WARRIOR' then
-				if spent3 > spent1 and spent3 > spent2 then
-					if not isTank then
-						UnitSetRole("player","TANK")
-					end
-				elseif spent3 < spent1 and spent3 < spent2 then
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				end
-			elseif E.myclass == 'PALADIN' then
-				if spent1 > spent3 and spent1 > spent2 then
-					if not isHealer then
-						UnitSetRole("player","HEALER")
-					end
-				elseif spent2 > spent1 and spent2 > spent3 then
-					if not isTank then
-						UnitSetRole("player","TANK")
-					end
-				elseif spent3 > spent1 and spent3 > spent2 then
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				end
-			elseif E.myclass == 'DEATHKNIGHT' then --only check for the blade barrier talent
-				if select(5, GetTalentInfo(1, 21)) > 0 then --GetTalentInfo is going to be removed, Use C_SpecializationInfo.GetTalentInfo instead. TODO
-					if not isTank then
-						UnitSetRole("player","TANK")
-					end
-				else
-					if not isDPS then
-						UnitSetRole("player","DAMAGER")
-					end
-				end
-			end
-		end
-	end
-end
-
-local roleframe = CreateFrame("FRAME")
-roleframe:RegisterEvent("GROUP_JOINED")
-roleframe:RegisterEvent("GROUP_ROSTER_UPDATE")
-roleframe:RegisterEvent("PLAYER_ENTERING_WORLD")
---roleframe:RegisterEvent("PLAYER_ROLES_ASSIGNED")
---roleframe:RegisterEvent("GROUP_LEFT")
-roleframe:SetScript("OnEvent", function()
-	if E.Mists or E.TBC or E.Wrath then
-		ElvUI_EltreumUI:SetGroupRoleClassic()
-	else
-		roleframe:UnregisterAllEvents()
-	end
-end)]]
-
 --automatic combat logging
 function ElvUI_EltreumUI:AutoCombatLog()
 	if E.db.ElvUI_EltreumUI.cvars.combatlog then
-		local _, instanceType2 = IsInInstance()
-		if instanceType2 == "raid" or instanceType2 == "party" or instanceType2 == "scenario" then
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
+		if instanceType == "raid" or instanceType == "party" or instanceType == "scenario" then
 			if not InCombatLockdown() then
 				SetCVar("advancedCombatLogging", 1)
 			end
@@ -375,10 +268,12 @@ end
 
 --replace the leader/assist/master looter icons in frames
 local UF = E:GetModule('UnitFrames')
-function ElvUI_EltreumUI:LeaderIcon()
+function ElvUI_EltreumUI:LeaderIcon(indicator)
 	if not E.db.ElvUI_EltreumUI.otherstuff.eltruismleadericons and not E.db.ElvUI_EltreumUI.otherstuff.eltruismassisticons and not E.db.ElvUI_EltreumUI.otherstuff.eltruismlootericons then return end
-	local anchor = self:GetParent()
-	local frame = anchor and anchor:GetParent():GetParent()
+	if not indicator or type(indicator) ~= "table" or not indicator.GetParent then return end
+	local anchor = indicator:GetParent()
+	local frame = anchor and anchor.GetParent and anchor:GetParent()
+	frame = frame and frame.GetParent and frame:GetParent()
 	if not frame then return end
 	if E.db.ElvUI_EltreumUI.otherstuff.eltruismleadericons and frame.LeaderIndicator then
 		frame.LeaderIndicator:SetTexCoord(0,1,0,1)
@@ -414,11 +309,11 @@ function ElvUI_EltreumUI:LeaderIcon()
 		end
 	end
 end
-hooksecurefunc(UF,"RaidRoleUpdate", ElvUI_EltreumUI.LeaderIcon)
+ElvUI_EltreumUI:SecureHook(UF,"RaidRoleUpdate", "LeaderIcon")
 
 --use new flipbook animation to recreate the blizzard resting animation
-function ElvUI_EltreumUI:RestIcon(frame)
-	if not frame then return end
+function ElvUI_EltreumUI:RestIcon(_, frame)
+	if not frame or type(frame) ~= "table" then return end
 	if frame.RestingIndicator and E.db.unitframe.units.player.enable and E.db.unitframe.units.player.RestIcon.enable and E.db.ElvUI_EltreumUI.unitframes.blizzardresticon then
 		if not frame.RestingIndicator.EltruismHook then
 			if not _G["EltruismPlayerRestLoop"] then
@@ -474,4 +369,4 @@ function ElvUI_EltreumUI:RestIcon(frame)
 		_G["EltruismPlayerRestLoop"]:SetScale(E.db.unitframe.units.player.RestIcon.size/10)
 	end
 end
-hooksecurefunc(UF,"Configure_RestingIndicator", ElvUI_EltreumUI.RestIcon)
+ElvUI_EltreumUI:SecureHook(UF,"Configure_RestingIndicator", "RestIcon")

@@ -12,9 +12,7 @@ WideTradeSkill:RegisterEvent("PLAYER_ENTERING_WORLD")
 local WideTradeSkillEnchant = CreateFrame("Frame")
 WideTradeSkillEnchant:RegisterEvent("PLAYER_ENTERING_WORLD")
 local string = _G.string
-local stringformat = string.format
 local stringmatch = string.match
-local mathfloor = _G.math.floor
 local UseItemByName = _G.C_Item and _G.C_Item.UseItemByName or _G.UseItemByName
 
 --gradient loot roll/mirror/breath/feigndeath
@@ -22,7 +20,7 @@ function ElvUI_EltreumUI:GradientMirrorLoot()
 	if E.db.ElvUI_EltreumUI.unitframes.gradientmode.mirrorTimers then
 
 		--breath/mirror
-		if not E.Retail then
+		if not E.Modern then
 			for i = 1, 3 do
 				local statusBar = _G['MirrorTimer'..i..'StatusBar']
 				if statusBar then
@@ -61,27 +59,6 @@ function ElvUI_EltreumUI:GradientMirrorLoot()
 							end
 						end
 
-						--mirror timer... time text
-						if not bar.StatusBar.EltruismTimerHook then
-							local spellInfo = _G.C_Spell.GetSpellInfo(5384)
-							_G.hooksecurefunc(bar, "UpdateStatusBarValue", function(bar1)
-								if bar1.Text then
-									local barvalue = mathfloor(bar1.StatusBar:GetValue())
-									local minutes = mathfloor(barvalue/60)
-									local seconds = barvalue % 60
-									local timetext = stringformat('%d:%02d', minutes, seconds)
-									if bar.Text:GetText():match(_G.BREATH_LABEL) then
-										bar1.Text:SetText(_G.BREATH_LABEL.." "..timetext)
-									elseif bar.Text:GetText():match(_G.EXHAUSTION_LABEL) then
-										bar1.Text:SetText(_G.EXHAUSTION_LABEL.." "..timetext)
-									elseif bar.Text:GetText():match(spellInfo.name) then --feign death
-										bar1.Text:SetText(spellInfo.name.." "..timetext)
-									end
-								end
-							end)
-							bar.StatusBar.EltruismTimerHook = true
-						end
-
 						--gradient
 						if E.db.ElvUI_EltreumUI.unitframes.gradientmode.enable then
 							local atlas = bar.StatusBar:GetStatusBarTexture():GetAtlas()
@@ -114,7 +91,7 @@ function ElvUI_EltreumUI:GradientMirrorLoot()
 
 		--loot roll
 		local M = E:GetModule('Misc')
-		local maxBars = E.Retail and E.db.general.lootRoll.maxBars or _G.NUM_GROUP_LOOT_FRAMES or 4
+		local maxBars = E.Modern and E.db.general.lootRoll.maxBars or _G.NUM_GROUP_LOOT_FRAMES or 4
 		for i = 1, maxBars do
 			local frame = M:LootRoll_GetFrame(i)
 			if frame then
@@ -379,20 +356,24 @@ function ElvUI_EltreumUI:SkinProfessions()
 end
 
 --enchanting vellum/disenchant buttons
+local InCombatLockdown = _G.InCombatLockdown
 function ElvUI_EltreumUI:EnchantScroll()
 	if E.db.ElvUI_EltreumUI.skins.professions and E.private.skins.blizzard.enable then
 
 		--hijack here because retail is different
-		if E.Retail then
+		if E.Modern then
 			if _G.ProfessionsFrame then
 				--_G.ProfessionsFrame:SetScale(E.db.ElvUI_EltreumUI.skins.professionscale)
 				_G.ProfessionsFrame:HookScript("OnEvent", function()
+					if InCombatLockdown() then return end
 					_G.ProfessionsFrame:SetScale(E.db.ElvUI_EltreumUI.skins.professionscale or 1)
 				end)
 				_G.ProfessionsFrame:HookScript("OnShow", function()
+					if InCombatLockdown() then return end
 					_G.ProfessionsFrame:SetScale(E.db.ElvUI_EltreumUI.skins.professionscale or 1)
 				end)
 				_G.ProfessionsFrame:SetScript('OnSizeChanged', function()
+					if InCombatLockdown() then return end
 					_G.ProfessionsFrame:SetScale(E.db.ElvUI_EltreumUI.skins.professionscale or 1)
 				end)
 
@@ -411,7 +392,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 		local vellumbutton
 		if not E.Classic then
 			if not _G["EltruismVellumButton"] then
-				if E.Retail then
+				if E.Modern then
 					vellumbutton = CreateFrame("BUTTON", "EltruismVellumButton", _G["ProfessionsFrame"], "MagicButtonTemplate")
 					vellumbutton:SetPoint("RIGHT", _G.ProfessionsFrame.CraftingPage.CreateAllButton, "LEFT", -1, 0)
 				else
@@ -427,7 +408,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 		--create disenchant button
 		local disenchantbutton
 		if not _G["EltruismDisenchantButton"] then
-			if E.Retail then
+			if E.Modern then
 				disenchantbutton = CreateFrame("BUTTON", "EltruismDisenchantButton", _G["ProfessionsFrame"], "MagicButtonTemplate,InsecureActionButtonTemplate")
 				disenchantbutton:SetPoint("RIGHT", "EltruismVellumButton", "LEFT", -1, 0)
 			else
@@ -451,7 +432,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 
 		--script buttons
 		local hookedframe
-		if E.Retail then
+		if E.Modern then
 			hookedframe = _G.ProfessionsFrame
 		else
 			hookedframe = _G.TradeSkillFrame
@@ -477,7 +458,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 						if GetItemCount(38682) > 0 then
 							vellumbutton:SetEnabled(true)
 							--C_TradeSkillUI.CraftRecipe(_G["TradeSkillFrame"].DetailsFrame.selectedRecipeID)
-							if E.Retail then
+							if E.Modern then
 								_G.C_TradeSkillUI.CraftRecipe(_G["ProfessionsFrame"].CraftingPage.RecipeList.previousRecipeID)
 							else
 								_G.TradeSkillCreateButton:Click()
@@ -494,7 +475,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 		end
 
 		--fix disenchant overlap with create all
-		if E.Retail then
+		if E.Modern then
 			if _G.ProfessionsFrame.CraftingPage.CreateAllButton then
 				_G.ProfessionsFrame.CraftingPage.CreateAllButton:SetScript("OnShow", function()
 					vellumbutton:ClearAllPoints()
@@ -514,7 +495,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 				local spellData = GetSpellInfo(7411)
 				enchantingtext = spellData.name
 				local tradeskilltext
-				if E.Retail then
+				if E.Modern then
 					tradeskilltext = _G.ProfessionsFrameTitleText:GetText()
 				else
 					tradeskilltext = _G.TradeSkillFrameTitleText:GetText()
@@ -532,7 +513,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 				end
 			end)
 		end
-		if E.Retail then
+		if E.Modern then
 			_G.ProfessionsFrame:HookScript("OnShow",function() UpdateButtons() end)
 			_G.ProfessionsFrame:HookScript("OnEvent",function() UpdateButtons() end)
 		else
@@ -558,7 +539,7 @@ local function TSMCheck(arg)
 end
 tradeskilloadmonitor:SetScript("OnEvent", function(_,_,arg)
 	--in 10.1.5 the addon load order seems to not be reliable and tsm can error, so check for tsm being enabled (because it wont be loaded)
-	if E.Retail then
+	if E.Modern then
 		if GetAddOnEnableState("TradeSkillMaster",E.myname) == 0 then
 			TSMCheck(arg)
 		else
@@ -570,6 +551,76 @@ tradeskilloadmonitor:SetScript("OnEvent", function(_,_,arg)
 	end
 end)
 
+local lastZoneText = ""
+local lastPVPInfoText = ""
+local ONUPDATE_INTERVAL = 0.016 --if 1 then the text changes too slow
+local TimeSinceLastUpdate = 0
+function ElvUI_EltreumUI.ZoneTextFrame_OnUpdate(_,elapsed)
+	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
+	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+		TimeSinceLastUpdate = 0
+		local zoneText = _G.ZoneTextString:GetText()
+		if zoneText and zoneText ~= lastZoneText and not zoneText:match("|r|c") then
+			local r,g,b = _G.ZoneTextString:GetTextColor()
+			local r2 = r-0.3
+			if r2 < 0 then r2 = 0 end
+			local g2 = g-0.3
+			if g2 < 0 then g2 = 0 end
+			local b2 = b-0.3
+			if b2 < 0 then b2 = 0 end
+			lastZoneText = E:TextGradient(zoneText, r, g, b, r2, g2, b2)
+			_G.ZoneTextString:SetText(lastZoneText)
+		end
+
+		local pvpText = _G.PVPInfoTextString:GetText()
+		if pvpText and pvpText ~= lastPVPInfoText and not pvpText:match("|r|c") then
+			local r,g,b = _G.PVPInfoTextString:GetTextColor()
+			local r2 = r-0.3
+			if r2 < 0 then r2 = 0 end
+			local g2 = g-0.3
+			if g2 < 0 then g2 = 0 end
+			local b2 = b-0.3
+			if b2 < 0 then b2 = 0 end
+			lastPVPInfoText = E:TextGradient(pvpText, r, g, b, r2, g2, b2)
+			_G.PVPInfoTextString:SetText(lastPVPInfoText)
+		end
+	end
+end
+
+local lastSubZoneText = ""
+local lastPVPArenaText = ""
+function ElvUI_EltreumUI.SubZoneTextFrame_OnUpdate(_,elapsed)
+	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
+	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+		TimeSinceLastUpdate = 0
+		local subZoneText = _G.SubZoneTextString:GetText()
+		if subZoneText and subZoneText ~= lastSubZoneText and not subZoneText:match("|r|c") then
+			local r,g,b = _G.SubZoneTextString:GetTextColor()
+			local r2 = r-0.3
+			if r2 < 0 then r2 = 0 end
+			local g2 = g-0.3
+			if g2 < 0 then g2 = 0 end
+			local b2 = b-0.3
+			if b2 < 0 then b2 = 0 end
+			lastSubZoneText = E:TextGradient(subZoneText, r, g, b, r2, g2, b2)
+			_G.SubZoneTextString:SetText(lastSubZoneText)
+		end
+
+		local pvpArenaText = _G.PVPArenaTextString:GetText()
+		if pvpArenaText and pvpArenaText ~= lastPVPArenaText and not pvpArenaText:match("|r|c") then
+			local r,g,b = _G.PVPArenaTextString:GetTextColor()
+			local r2 = r-0.3
+			if r2 < 0 then r2 = 0 end
+			local g2 = g-0.3
+			if g2 < 0 then g2 = 0 end
+			local b2 = b-0.3
+			if b2 < 0 then b2 = 0 end
+			lastPVPArenaText = E:TextGradient(pvpArenaText, r, g, b, r2, g2, b2)
+			_G.PVPArenaTextString:SetText(lastPVPArenaText)
+		end
+	end
+end
+
 function ElvUI_EltreumUI:SkinMailZone()
 	if E.db.ElvUI_EltreumUI.skins.zones then
 		if E.db.general.fontStyle ~= "NONE" then
@@ -580,57 +631,8 @@ function ElvUI_EltreumUI:SkinMailZone()
 		end
 
 		if E.db.ElvUI_EltreumUI.unitframes.gradientmode.enable and not self.ZoneSkinned then
-			_G.ZoneTextFrame:HookScript("OnUpdate", function()
-				--_G.ZoneTextString:SetWidth(512)
-				--_G.ZoneTextString:SetMaxLines(1)
-				--_G.ZoneTextString:SetWordWrap(false)
-				--_G.ZoneTextString:SetText("Putricide's Laboratory of Alchemical Horrors and Fun") --debug for length
-				if _G.ZoneTextString:GetText() ~= nil and not _G.ZoneTextString:GetText():match("|r|c") then
-					local r,g,b = _G.ZoneTextString:GetTextColor()
-					local r2 = r-0.3
-					if r2 < 0 then r2 = 0 end
-					local g2 = g-0.3
-					if g2 < 0 then g2 = 0 end
-					local b2 = b-0.3
-					if b2 < 0 then b2 = 0 end
-					_G.ZoneTextString:SetText(E:TextGradient(_G.ZoneTextString:GetText(), r, g, b, r2, g2, b2))
-				end
-				if _G.PVPInfoTextString:GetText() ~= nil and not _G.PVPInfoTextString:GetText():match("|r|c") then
-					local r,g,b = _G.PVPInfoTextString:GetTextColor()
-					local r2 = r-0.3
-					if r2 < 0 then r2 = 0 end
-					local g2 = g-0.3
-					if g2 < 0 then g2 = 0 end
-					local b2 = b-0.3
-					if b2 < 0 then b2 = 0 end
-					_G.PVPInfoTextString:SetText(E:TextGradient(_G.PVPInfoTextString:GetText(), r, g, b, r2, g2, b2))
-				end
-			end)
-			_G.SubZoneTextFrame:HookScript("OnUpdate", function()
-				--_G.SubZoneTextString:SetWidth(512)
-				--_G.SubZoneTextString:SetMaxLines(1)
-				--_G.SubZoneTextString:SetWordWrap(false)
-				if _G.SubZoneTextString:GetText() ~= nil and not _G.SubZoneTextString:GetText():match("|r|c") then
-					local r,g,b = _G.SubZoneTextString:GetTextColor()
-					local r2 = r-0.3
-					if r2 < 0 then r2 = 0 end
-					local g2 = g-0.3
-					if g2 < 0 then g2 = 0 end
-					local b2 = b-0.3
-					if b2 < 0 then b2 = 0 end
-					_G.SubZoneTextString:SetText(E:TextGradient(_G.SubZoneTextString:GetText(), r, g, b, r2, g2, b2))
-				end
-				if _G.PVPArenaTextString:GetText() ~= nil and not _G.PVPArenaTextString:GetText():match("|r|c") then
-					local r,g,b = _G.PVPArenaTextString:GetTextColor()
-					local r2 = r-0.3
-					if r2 < 0 then r2 = 0 end
-					local g2 = g-0.3
-					if g2 < 0 then g2 = 0 end
-					local b2 = b-0.3
-					if b2 < 0 then b2 = 0 end
-					_G.PVPArenaTextString:SetText(E:TextGradient(_G.PVPArenaTextString:GetText(), r, g, b, r2, g2, b2))
-				end
-			end)
+			_G.ZoneTextFrame:HookScript("OnUpdate", ElvUI_EltreumUI.ZoneTextFrame_OnUpdate)
+			_G.SubZoneTextFrame:HookScript("OnUpdate", ElvUI_EltreumUI.SubZoneTextFrame_OnUpdate)
 			self.ZoneSkinned = true
 		end
 	end
@@ -639,7 +641,7 @@ end
 --hide talking head
 local EltruismHideTalkingHead = CreateFrame('Frame', "EltruismHideTalkingHeadFrame")
 function ElvUI_EltreumUI:EltruismHideTalkingHead()
-	if E.Retail then
+	if E.Modern then
 		if E.db.ElvUI_EltreumUI.skins.hidetalkinghead then
 			EltruismHideTalkingHead:RegisterEvent('ADDON_LOADED')
 			EltruismHideTalkingHead:SetScript('OnEvent', function(_, event)

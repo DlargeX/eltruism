@@ -2,7 +2,6 @@ local E, L = unpack(ElvUI)
 local S = E:GetModule('Skins')
 local _G = _G
 local hooksecurefunc = _G.hooksecurefunc
-local unpack = _G.unpack
 local next = _G.next
 local InCombatLockdown = _G.InCombatLockdown
 local embedpanel
@@ -213,16 +212,10 @@ do
 			end
 		end
 
-		--add a basic embed if addonskins is not loaded
+		--add a basic embed
 		if E.db.ElvUI_EltreumUI.skins.detailsembed and E.private.chat.enable then
 			local checkembed = true
-			if IsAddOnLoaded("AddOnSkins") or IsAddOnLoaded("ElvUI_MerathilisUI") then
-				if IsAddOnLoaded("AddOnSkins") then
-					local AS = unpack(_G.AddOnSkins)
-					if (AS.db["EmbedSystemDual"] or AS.db["EmbedSystem"]) then
-						checkembed = false
-					end
-				end
+			if IsAddOnLoaded("ElvUI_MerathilisUI") then
 				if IsAddOnLoaded("ElvUI_MerathilisUI") then
 					if E.private.mui.skins.embed and E.private.mui.skins.embed.enable then
 						checkembed = false

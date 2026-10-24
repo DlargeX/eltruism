@@ -9,6 +9,7 @@ local GetProfessionInfo = _G.GetProfessionInfo
 local IsSpellKnown = _G.C_SpellBook and _G.C_SpellBook.IsSpellKnown or _G.IsSpellKnown
 local IsPlayerMoving = _G.IsPlayerMoving
 local CastSpell = _G.CastSpell
+local LCG = _G.LibStub("LibEltreumGlow")
 
 --add profession shortcuts to the ElvUI bags, suggested by Xheno
 function ElvUI_EltreumUI:BagProfessions()
@@ -102,19 +103,24 @@ function ElvUI_EltreumUI:BagProfessions()
 				[83] = 110406, --mop First Aid
 				[84] = 33359, --tbc cooking
 				--[84] = 61422, --mop/wrath Smelting ?
+				[85] = 51296, --titan reforged cooking
+				--[86] = 131474,--fishing (actually just the cast)
+				[86] = 2842, --classic rogue poisons
 			}
 			local blockprof = {
-				[4620674] = true,
-				[4620680] = true,
-				[4620675] = true,
-				[4620679] = true,
-				[441139] = true,
+				[4620674] = true, --fishing (panel not skill)
+				[4620680] = true, --skinning
+				[4620675] = true, --herbalism
+				[4620679] = true, --mining
+				[441139] = true, --archaeology
+				[1278067] = true, --forever bait and tackle
+				[136245] = true, --forever bait and tackle
 			}
 			_G["ElvUI_ContainerFrame"]:HookScript("OnShow", function()
 				if not _G["ElvUI_ContainerFrame"].numButtons then
 					if InCombatLockdown() then return end
 					_G["ElvUI_ContainerFrame"].numButtons = 0
-					if E.Retail then
+					if E.Modern then
 						for _,v in ipairs{GetProfessions()} do
 							local name, icon, _, _, _, spelloffset = GetProfessionInfo(v)
 							if name then
@@ -194,8 +200,6 @@ function ElvUI_EltreumUI:BagProfessions()
 								_G["EltruismProfessionDisenchantBagButton"].icon:SetTexCoord(0.08,0.92,0.08,0.92)
 								_G["EltruismProfessionDisenchantBagButton"].icon:SetAllPoints()
 								_G["EltruismProfessionDisenchantBagButton"].isGlowing = false
-
-								local LCG = E.Libs.CustomGlow
 								_G["EltruismProfessionDisenchantBagButton"]:HookScript("OnClick",function()
 									if _G["EltruismProfessionDisenchantBagButton"].isGlowing then
 										LCG.PixelGlow_Stop(_G["EltruismProfessionDisenchantBagButton"])
@@ -276,7 +280,6 @@ function ElvUI_EltreumUI:BagProfessions()
 								_G["EltruismProfessionLockpickBagButton"].icon:SetAllPoints()
 								_G["EltruismProfessionLockpickBagButton"].isGlowing = false
 
-								local LCG = E.Libs.CustomGlow
 								--some event handling to get rid of the glow
 								_G["EltruismProfessionLockpickBagButton"]:RegisterUnitEvent("UNIT_SPELLCAST_FAILED","player")
 								_G["EltruismProfessionLockpickBagButton"]:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED","player")
@@ -337,6 +340,31 @@ function ElvUI_EltreumUI:BagProfessions()
 								end)
 							end
 						end
+
+						local fishingSpell = E.Retail and 131474 or 7620
+
+						--fishing
+						if IsSpellKnown(fishingSpell) then
+							if not _G["EltruismProfessionFishingBagButton"] then
+								local _, _, icon = ElvUI_EltreumUI:EltruismSpellInfo(fishingSpell)
+								_G["ElvUI_ContainerFrame"].numButtons = _G["ElvUI_ContainerFrame"].numButtons + 1
+								_G["EltruismProfessionFishingBagButton"] = CreateFrame("Button","EltruismProfessionFishingBagButton",_G["ElvUI_ContainerFrame"],"SecureActionButtonTemplate")
+								_G["EltruismProfessionFishingBagButton"]:SetSize(21,21)
+								--_G["EltruismProfessionFishingBagButton"]:SetTemplate("Transparent")
+								_G["EltruismProfessionFishingBagButton"]:CreateBackdrop('Transparent')
+								_G["EltruismProfessionFishingBagButton"].backdrop.Center:Hide()
+								S:HandleButton(_G["EltruismProfessionFishingBagButton"])
+								_G["EltruismProfessionFishingBagButton"]:SetPoint("BOTTOMLEFT", _G["ElvUI_ContainerFrameEditBox"],"TOPLEFT", (_G["ElvUI_ContainerFrame"].numButtons-1)*28, 3)
+								_G["EltruismProfessionFishingBagButton"]:SetAttribute('type', 'spell')
+								_G["EltruismProfessionFishingBagButton"]:SetAttribute('spell', fishingSpell)
+								ElvUI_EltreumUI:MacroClick(_G["EltruismProfessionFishingBagButton"])
+								_G["EltruismProfessionFishingBagButton"].icon = _G["EltruismProfessionFishingBagButton"]:CreateTexture(nil,"ARTWORK")
+								_G["EltruismProfessionFishingBagButton"].icon:SetTexture(icon)
+								_G["EltruismProfessionFishingBagButton"].icon:SetTexCoord(0.08,0.92,0.08,0.92)
+								_G["EltruismProfessionFishingBagButton"].icon:SetAllPoints()
+								_G["EltruismProfessionFishingBagButton"].isGlowing = false
+							end
+						end
 					else
 						for k, v in ipairs(proftable) do
 							if IsSpellKnown(v) then
@@ -381,8 +409,6 @@ function ElvUI_EltreumUI:BagProfessions()
 								_G["EltruismProfessionDisenchantBagButton"].icon:SetTexCoord(0.08,0.92,0.08,0.92)
 								_G["EltruismProfessionDisenchantBagButton"].icon:SetAllPoints()
 								_G["EltruismProfessionDisenchantBagButton"].isGlowing = false
-
-								local LCG = E.Libs.CustomGlow
 								_G["EltruismProfessionDisenchantBagButton"]:HookScript("OnClick",function()
 									if _G["EltruismProfessionDisenchantBagButton"].isGlowing then
 										LCG.PixelGlow_Stop(_G["EltruismProfessionDisenchantBagButton"])
@@ -461,8 +487,6 @@ function ElvUI_EltreumUI:BagProfessions()
 								_G["EltruismProfessionLockpickBagButton"].icon:SetTexCoord(0.08,0.92,0.08,0.92)
 								_G["EltruismProfessionLockpickBagButton"].icon:SetAllPoints()
 								_G["EltruismProfessionLockpickBagButton"].isGlowing = false
-
-								local LCG = E.Libs.CustomGlow
 								_G["EltruismProfessionLockpickBagButton"]:HookScript("OnClick",function()
 									if _G["EltruismProfessionLockpickBagButton"].isGlowing then
 										LCG.PixelGlow_Stop(_G["EltruismProfessionLockpickBagButton"])
@@ -520,6 +544,29 @@ function ElvUI_EltreumUI:BagProfessions()
 								end)
 							end
 						end
+
+						--fishing
+						if IsSpellKnown(7620) then
+							if not _G["EltruismProfessionFishingBagButton"] then
+								local _, _, icon = ElvUI_EltreumUI:EltruismSpellInfo(7620)
+								_G["ElvUI_ContainerFrame"].numButtons = _G["ElvUI_ContainerFrame"].numButtons + 1
+								_G["EltruismProfessionFishingBagButton"] = CreateFrame("Button","EltruismProfessionFishingBagButton",_G["ElvUI_ContainerFrame"],"SecureActionButtonTemplate")
+								_G["EltruismProfessionFishingBagButton"]:SetSize(21,21)
+								--_G["EltruismProfessionFishingBagButton"]:SetTemplate("Transparent")
+								_G["EltruismProfessionFishingBagButton"]:CreateBackdrop('Transparent')
+								_G["EltruismProfessionFishingBagButton"].backdrop.Center:Hide()
+								S:HandleButton(_G["EltruismProfessionFishingBagButton"])
+								_G["EltruismProfessionFishingBagButton"]:SetPoint("BOTTOMLEFT", _G["ElvUI_ContainerFrameEditBox"],"TOPLEFT", (_G["ElvUI_ContainerFrame"].numButtons-1)*28, 3)
+								_G["EltruismProfessionFishingBagButton"]:SetAttribute('type', 'spell')
+								_G["EltruismProfessionFishingBagButton"]:SetAttribute('spell', 7620)
+								ElvUI_EltreumUI:MacroClick(_G["EltruismProfessionFishingBagButton"])
+								_G["EltruismProfessionFishingBagButton"].icon = _G["EltruismProfessionFishingBagButton"]:CreateTexture(nil,"ARTWORK")
+								_G["EltruismProfessionFishingBagButton"].icon:SetTexture(icon)
+								_G["EltruismProfessionFishingBagButton"].icon:SetTexCoord(0.08,0.92,0.08,0.92)
+								_G["EltruismProfessionFishingBagButton"].icon:SetAllPoints()
+								_G["EltruismProfessionFishingBagButton"].isGlowing = false
+							end
+						end
 					end
 				end
 			end)
@@ -531,7 +578,7 @@ function ElvUI_EltreumUI:BagProfessions()
 			combatcheck:SetScript("OnEvent", function(_, event)
 				if event == "PLAYER_REGEN_DISABLED" then
 					if _G["ElvUI_ContainerFrame"].numButtons then
-						if E.Retail then
+						if E.Modern then
 							for _,v in ipairs{GetProfessions()} do
 								if _G["EltruismProfession"..v.."BagButton"] then
 									_G["EltruismProfession"..v.."BagButton"]:ClearAllPoints()
@@ -565,7 +612,7 @@ function ElvUI_EltreumUI:BagProfessions()
 				elseif event == "PLAYER_REGEN_ENABLED" then
 					if _G["ElvUI_ContainerFrame"].numButtons then
 						_G["ElvUI_ContainerFrame"].numButtons = 0
-						if E.Retail then
+						if E.Modern then
 							for _,v in ipairs{GetProfessions()} do
 								local name, icon = GetProfessionInfo(v)
 								if name and not blockprof[icon] then

@@ -3,16 +3,6 @@ local _G = _G
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
 
--- AddOnSkins Profile
-function ElvUI_EltreumUI:AddonSetupAS()
-	if IsAddOnLoaded("AddOnSkins") then
-		ElvUI_EltreumUI:GetASProfile()
-		ElvUI_EltreumUI:Print(L["AddOnSkins profile has been set."])
-	else
-		ElvUI_EltreumUI:Print("AddOnSkins is not loaded")
-	end
-end
-
 -- Immersion Profile
 function ElvUI_EltreumUI:AddonSetupImmersion()
 	if IsAddOnLoaded("Immersion") then
@@ -71,36 +61,6 @@ function ElvUI_EltreumUI:AddonSetupDynamicCam()
 	end
 end
 
--- GladiusEx Profile
-function ElvUI_EltreumUI:AddonSetupGladiusEx()
-	if IsAddOnLoaded("GladiusEx") then
-		ElvUI_EltreumUI:GetGladiusExProfile()
-		ElvUI_EltreumUI:Print(L["GladiusEx profile has been set."])
-	else
-		ElvUI_EltreumUI:Print("GladiusEx is not loaded")
-	end
-end
-
--- MRT Profile
-function ElvUI_EltreumUI:AddonSetupMRT()
-	if IsAddOnLoaded("MRT") then
-		ElvUI_EltreumUI:GetMRTProfile()
-		ElvUI_EltreumUI:Print(L["Method Raid Tools profile has been set."])
-	else
-		ElvUI_EltreumUI:Print("Method Raid Tools is not loaded")
-	end
-end
-
--- ProjectAzilroka Profile
-function ElvUI_EltreumUI:AddonSetupPA()
-	if IsAddOnLoaded("ProjectAzilroka") then
-		ElvUI_EltreumUI:GetPAProfile()
-		ElvUI_EltreumUI:Print(L["ProjectAzilroka profile has been set."])
-	else
-		ElvUI_EltreumUI:Print("ProjectAzilroka is not loaded")
-	end
-end
-
 -- Questie Profile
 function ElvUI_EltreumUI:AddonSetupQuestie()
 	if IsAddOnLoaded("Questie") then
@@ -136,16 +96,6 @@ function ElvUI_EltreumUI:AddonSetupCombatText(addon)
 	end
 end
 
--- Gladius Profile
-function ElvUI_EltreumUI:SetupGladius()
-	if IsAddOnLoaded("Gladius") then
-		ElvUI_EltreumUI:GetGladiusProfile()
-		ElvUI_EltreumUI:Print(L["Gladius profile has been set."])
-	else
-		ElvUI_EltreumUI:Print("Gladius is not loaded")
-	end
-end
-
 -- Gladdy Profile
 function ElvUI_EltreumUI:SetupGladdy()
 	if IsAddOnLoaded("Gladdy") then
@@ -159,7 +109,7 @@ end
 -- Repooc's Dynamic Status Icons
 function ElvUI_EltreumUI:SetupDynamicStatusIcons()
 	if IsAddOnLoaded("ElvUI_DynamicStatusIcons") then
-		if ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer") then
+		if ElvDB.profileKeys[E.mynameRealm] and (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS/Tank") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
 			E.db["unitframe"]["units"]["player"]["DynamicStatusIcons"]["anchorPoint"] = "BOTTOMRIGHT"
 			E.db["unitframe"]["units"]["player"]["DynamicStatusIcons"]["color"]["b"] = 0.4274500310421
 			E.db["unitframe"]["units"]["player"]["DynamicStatusIcons"]["color"]["g"] = 0.60784178972244

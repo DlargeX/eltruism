@@ -8,19 +8,11 @@ local RightChatDamageMeterHook = false
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local instanceType = "none"
 local CreateColor = _G.CreateColor
-local function clamp(v)
-	if v < 0 then return 0 elseif v > 1 then return 1 end
-	return v
-end
 local dmMin = CreateColor(1, 1, 1, 1)
 local dmMax = CreateColor(1, 1, 1, 1)
 
 --pretty much copied from elvui and edited to look more like details
 do
-
-	function ElvUI_EltreumUI:DamageMeterZoneCheck()
-		instanceType = select(2,_G.IsInInstance())
-	end
 
 	local BlizzardTextureIDsForSpecs = {
 		["608952"] = 270,
@@ -353,10 +345,44 @@ do
 		end)
 	end
 
+	local function UpdateBarBackground(bar)
+		if not bar then return end
+		if bar.StatusBar then
+			if bar.StatusBar.Background then
+				bar.StatusBar.Background:ClearAllPoints()
+				bar.StatusBar.Background:SetAllPoints(bar.StatusBar)
+				--bar.StatusBar.Background:SetAlpha(0)
+				--bar.StatusBar.Background:Hide()
+			end
+			if bar.StatusBar.BackgroundEdge then
+				bar.StatusBar.BackgroundEdge:SetAlpha(0)
+				bar.StatusBar.BackgroundEdge:Hide()
+			end
+		end
+		if bar.Background then
+			bar.Background:ClearAllPoints()
+			bar.Background:SetAllPoints(bar.StatusBar)
+			--bar.Background:SetAlpha(0)
+			--bar.Background:Hide()
+		end
+	end
+
 	local function SkinDamageMeter(bar)
 		if instanceType == "pvp" or instanceType == "arena" then return end
 		if not bar then return end
 		if not bar.StatusBar then return end
+
+		UpdateBarBackground(bar)
+
+		if bar.SetupSharedStyleBackground and not bar.SetupSharedStyleBackgroundEltruismHook then
+			hooksecurefunc(bar, "SetupSharedStyleBackground", UpdateBarBackground)
+			bar.SetupSharedStyleBackgroundEltruismHook = true
+		end
+		if bar.UpdateBackground and not bar.UpdateBackgroundEltruismHook then
+			hooksecurefunc(bar, "UpdateBackground", UpdateBarBackground)
+			bar.UpdateBackgroundEltruismHook = true
+		end
+
 		if E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.replaceIcon then
 			if bar.UpdateIcon and not bar.UpdateIconEltruismHook then
 				hooksecurefunc(bar, "UpdateIcon", function(icon)
@@ -386,6 +412,9 @@ do
 					end
 				end)
 				bar.UpdateIconEltruismHook = true
+				if bar.UpdateIcon then
+					bar:UpdateIcon()
+				end
 			end
 		end
 
@@ -394,8 +423,8 @@ do
 
 		if E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.shadows then
 			if not bar.StatusBar.shadow then
-				bar.StatusBar:CreateShadow() --shadows seem tricky, they dont seem to appear due to the .Background unless they are huge
-				ElvUI_EltreumUI:ShadowColor(bar.StatusBar.shadow)
+				bar.StatusBar:CreateShadow(2) --shadows seem tricky, they dont seem to appear due to the .Background unless they are huge
+				--ElvUI_EltreumUI:ShadowColor(bar.StatusBar.shadow)
 				--bar.StatusBar.shadow:SetOutside(bar.StatusBar.Background)
 			end
 		end
@@ -403,27 +432,48 @@ do
 			if not bar.GradientStatusBarEltruismHook then
 				local sbtexture = bar.StatusBar:GetStatusBarTexture()
 				hooksecurefunc(sbtexture, "SetVertexColor", function(_, r, g, b)
-					if bar.classFilename then
+					if bar.classFilename and E:NotSecretValue(bar.classFilename) then
 						if E.db.ElvUI_EltreumUI.unitframes.gradientmode.customcolor then
 							sbtexture:SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsDetailsCustom(bar.classFilename))
 						else
 							sbtexture:SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsDetails(bar.classFilename))
 						end
 					else
-						dmMin:SetRGBA(clamp(r - 0.5), clamp(g - 0.5), clamp(b - 0.5), 0.9)
-						dmMax:SetRGBA(clamp(r + 0.2), clamp(g + 0.2), clamp(b + 0.2), 0.9)
+						dmMin:SetRGBA(E:Clamp(r - 0.5, 0, 1), E:Clamp(g - 0.5, 0, 1), E:Clamp(b - 0.5, 0, 1), 0.9)
+						dmMax:SetRGBA(E:Clamp(r + 0.2, 0, 1), E:Clamp(g + 0.2, 0, 1), E:Clamp(b + 0.2, 0, 1), 0.9)
 						sbtexture:SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, dmMin, dmMax)
 					end
+
 					--even though its supposed to not be secret we will get the secret error
-					--[[if bar.StatusBar.Name then
-						local name = E:StripString(bar.StatusBar.Name:GetText())
-						bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(ElvUI_EltreumUI:ShortenString(name, 12, true), bar.classFilename))
-					end]]
-					if bar.StatusBar.Background then
-						bar.StatusBar.Background:ClearAllPoints()
-						bar.StatusBar.Background:SetAllPoints(bar.StatusBar)
+					if bar.StatusBar.Name and bar.StatusBar.Name.GetText and E:NotSecretValue(bar.StatusBar.Name:GetText()) then
+						local name = bar.StatusBar.Name:GetText()
+						if name and E:NotSecretValue(name) and bar.classFilename then
+							local nameStripped = E:StripString(name)
+							if E.Retail then
+								bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(ElvUI_EltreumUI:ShortenString(nameStripped, 12, true), bar.classFilename))
+							else
+								bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(nameStripped, bar.classFilename))
+							end
+						end
 					end
 				end)
+
+				if bar.UpdateName and not bar.UpdateNameEltruismHook then
+					hooksecurefunc(bar, "UpdateName", function()
+						if bar.StatusBar and bar.StatusBar.Name and bar.StatusBar.Name.GetText and E:NotSecretValue(bar.StatusBar.Name:GetText()) then
+							local name = bar.StatusBar.Name:GetText()
+							if name and E:NotSecretValue(name) and bar.classFilename then
+								local nameStripped = E:StripString(name)
+								if E.Retail then
+									bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(ElvUI_EltreumUI:ShortenString(nameStripped, 12, true), bar.classFilename))
+								else
+									bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(nameStripped, bar.classFilename))
+								end
+							end
+						end
+					end)
+					bar.UpdateNameEltruismHook = true
+				end
 
 				--set it outside as well, so that on PEW it gets gradient as well
 				if bar.classFilename then
@@ -431,6 +481,18 @@ do
 						sbtexture:SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsDetailsCustom(bar.classFilename))
 					else
 						sbtexture:SetGradient(E.db.ElvUI_EltreumUI.unitframes.gradientmode.orientation, ElvUI_EltreumUI:GradientColorsDetails(bar.classFilename))
+					end
+				end
+
+				if bar.StatusBar.Name and bar.StatusBar.Name.GetText and E:NotSecretValue(bar.StatusBar.Name:GetText()) then
+					local name = bar.StatusBar.Name:GetText()
+					if name and E:NotSecretValue(name) and bar.classFilename then
+						local nameStripped = E:StripString(name)
+						if E.Retail then
+							bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(ElvUI_EltreumUI:ShortenString(nameStripped, 12, true), bar.classFilename))
+						else
+							bar.StatusBar.Name:SetText(ElvUI_EltreumUI:GradientName(nameStripped, bar.classFilename))
+						end
 					end
 				end
 
@@ -457,7 +519,7 @@ do
 	--skin blizzard's dps meter to be similar to my details skin
 	function ElvUI_EltreumUI:BlizzDamageMeter()
 		if E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.enable then
-			ElvUI_EltreumUI:DamageMeterZoneCheck()
+			instanceType = ElvUI_EltreumUI:IsInInstance()
 
 			if instanceType ~= "pvp" and instanceType ~= "arena" then
 
@@ -472,7 +534,12 @@ do
 					_G.DamageMeterSessionWindow1:SetClampedToScreen(false)
 					_G.DamageMeterSessionWindow1:SetClampRectInsets(-2000, -2000, -2000, -2000)
 
-					hooksecurefunc(S, "DamageMeter_HandleStatusBar", SkinDamageMeter)
+					--skins change requires checking the table, then using that to actually skin like before
+					local ElvUIDamageMeterData = S.addonStorage.Blizzard_DamageMeter.data
+					if ElvUIDamageMeterData and not _G.DamageMeter.EltruismStatusBarHook then
+						hooksecurefunc(ElvUIDamageMeterData, "HandleStatusBar", SkinDamageMeter)
+						_G.DamageMeter.EltruismStatusBarHook = true
+					end
 
 					if E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.mouseOverTop then
 						hooksecurefunc(_G.DamageMeter, 'SetupSessionWindow', function()
@@ -480,6 +547,17 @@ do
 						end)
 						_G.DamageMeter:ForEachSessionWindow(SkinDamageMeterWindow)
 					end
+
+					--use blizz function to skin
+					_G.DamageMeter:ForEachSessionWindow(function(window)
+						local scrollBox = window:GetScrollBox()
+						if scrollBox then
+							scrollBox:ForEachFrame(SkinDamageMeter)
+						end
+						if window.MinimizeContainer and window.MinimizeContainer.LocalPlayerEntry then
+							SkinDamageMeter(window.MinimizeContainer.LocalPlayerEntry)
+						end
+					end)
 					_G.DamageMeter.EltruismHook = true
 
 					--if no refresh then turns out the specicons are nil because it seems they are loaded later
@@ -529,7 +607,8 @@ do
 						end
 						if _G["DamageMeterSessionWindow1"] then
 							_G["DamageMeterSessionWindow1"]:ClearAllPoints()
-							_G["DamageMeterSessionWindow1"]:SetPoint("TOPLEFT", embedpanel, "TOPLEFT",0,-20)
+							--_G["DamageMeterSessionWindow1"]:SetPoint("TOPLEFT", embedpanel, "TOPLEFT",0,-20)
+							_G["DamageMeterSessionWindow1"]:SetAllPoints(embedpanel)
 						end
 					end
 
@@ -539,9 +618,12 @@ do
 					end
 					embedpanel:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-					if not _G.RightChatToggleButton:IsShown() then --fix when no chat toggle exists
-						E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.embedhidden = false
-					end
+					--now cause a problem since its delayed
+					E:Delay(10, function()
+						if not _G.RightChatToggleButton:IsShown() then --fix when no chat toggle exists
+							E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.embedhidden = false
+						end
+					end)
 
 					embedpanel:SetScript("OnEvent", function(_,event)
 						if event == "PLAYER_REGEN_DISABLED" then

@@ -8,6 +8,8 @@ local GetAddOnMetadata = _G.C_AddOns and _G.C_AddOns.GetAddOnMetadata or _G.GetA
 local tonumber = _G.tonumber
 local select = _G.select
 local GetBuildInfo = _G.GetBuildInfo
+local type = _G.type
+local strmatch = _G.strmatch
 
 function ElvUI_EltreumUI:VersionCheckInit()
 	if E.private.ElvUI_EltreumUI.install_version < ElvUI_EltreumUI.Version then
@@ -23,7 +25,7 @@ end
 
 function ElvUI_EltreumUI:ElvUIVersionCheck()
 	E.PopupDialogs["ELVUIVERSIONCHECK"] = {
-		text = L["Your ElvUI version is out of date, please update to avoid issues!"].."\n\n"..L["Your ElvUI Version:"].."   "..E.versionString.."\n"..L["Latest ElvUI Version:"].."   "..ElvUI_EltreumUI.RequiredElvUI,
+		text = L["Your ElvUI version is out of date, please update to avoid issues!"].."\n\n"..L["Your ElvUI Version:"].."   "..E.versionString.."\n"..L["Latest ElvUI Version:"].."   "..GetAddOnMetadata("ElvUI_EltreumUI", 'X-ElvUI'),
 		--button1 = OKAY,
 		timeout = 0,
 		whileDead = 1,
@@ -50,33 +52,54 @@ function ElvUI_EltreumUI:ElvUIVersionCheck()
 		whileDead = 1,
 		hideOnEscape = false,
 	}
-	E.PopupDialogs["PRIVATESERVER"] = {
-		text = L["|cffff0000Private Servers are unsupported!"],
+	E.PopupDialogs["USEELVUIDEV"] = {
+		text = L["You are using Eltruism Dev\nIt is highly recommended to use ElvUI Dev"],
+		button1 = OKAY,
 		timeout = 0,
 		whileDead = 1,
 		hideOnEscape = false,
 	}
 
+	--check if using alpha, recommend elvui dev
+	if ElvUI_EltreumUI.DevRelease then
+		local elvuivcheck = GetAddOnMetadata("ElvUI", 'Version')
+		local _, extra = strmatch(elvuivcheck, '^v?([%d.]+)(.*)')
+		local isDev = (elvuivcheck == "@project-version@") or (extra and extra ~= "")
+		if not isDev then
+			E:StaticPopup_Show('USEELVUIDEV')
+		end
+	end
+
 	--elvui check
 	if E.version < 99999 then
-		if E.version < ElvUI_EltreumUI.RequiredElvUI then
+		if E.version < (tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-ElvUI'))) then
 			E:StaticPopup_Show('ELVUIVERSIONCHECK')
 			ElvUI_EltreumUI:Print(L["Your ElvUI version is out of date, please update to avoid issues!"])
-		elseif E.version > (tonumber(ElvUI_EltreumUI.RequiredElvUI) + 0.03) then
+		elseif E.version > (tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-ElvUI')) + 0.03) then
 			E:StaticPopup_Show('ELVUIVERSIONCHECK2')
 			ElvUI_EltreumUI:Print(L["Your ElvUI version is higher than expected for Eltruism, please update Eltruism or you might run into issues.\n|cffFF0000(You are likely having errors right now!)|r"])
 		end
 	end
 
 	--game version check
-	local requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-Interface'))
 	local currentversion = select(4,GetBuildInfo())
-	local privateserver = 30300
+	local requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-Interface'))
+	if _G.PTR_IssueReporter and (currentversion == tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfacePTR'))) then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfacePTR'))
+	elseif E.Classic then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfaceVanilla'))
+	elseif E.TBC then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfaceTBC'))
+	elseif E.Wrath then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfaceWrath'))
+	elseif E.Mists then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfaceMists'))
+	elseif E.Forever then
+		requiredversion = tonumber(GetAddOnMetadata("ElvUI_EltreumUI", 'X-InterfaceForever'))
+	end
 	if requiredversion < tonumber(currentversion) then
 		E:StaticPopup_Show('GAMEVERSIONCHECKHIGHER')
 		ElvUI_EltreumUI:Print(L["Your World of Warcraft version is higher than expected for Eltruism, please update Eltruism or you might run into issues.\n|cffFF0000(You are likely having errors right now!)|r"])
-	elseif tonumber(currentversion) == privateserver then
-		E:StaticPopup_Show('PRIVATESERVER')
 	elseif requiredversion > tonumber(currentversion) then
 		E:StaticPopup_Show('GAMEVERSIONCHECKLOWER')
 		ElvUI_EltreumUI:Print(L["Your World of Warcraft version is older than Eltruism, you might run into issues!"])
@@ -84,56 +107,25 @@ function ElvUI_EltreumUI:ElvUIVersionCheck()
 end
 
 function ElvUI_EltreumUI:PluginCheck()
-	if E.private.ElvUI_EltreumUI.install_version and (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
+	if E.private.ElvUI_EltreumUI.install_version and ElvDB.profileKeys[E.mynameRealm] and (ElvDB.profileKeys[E.mynameRealm]:match("Eltreum DPS") or ElvDB.profileKeys[E.mynameRealm]:match("Eltreum Healer")) then
 		if E.private.ElvUI_EltreumUI.install_version < "2.4.7" then
 			E.private.ElvUI_EltreumUI.isInstalled.sle = true
 			E.private.ElvUI_EltreumUI.isInstalled.windtools = true
-			E.private.ElvUI_EltreumUI.isInstalled.projectazilroka = true
 		elseif E.private.ElvUI_EltreumUI.install_version >= "2.4.7" then
-			if IsAddOnLoaded("ElvUI_SLE") and not IsAddOnLoaded("ElvUI_WindTools") and not IsAddOnLoaded('ProjectAzilroka') then
+			if IsAddOnLoaded("ElvUI_SLE") and not IsAddOnLoaded("ElvUI_WindTools") then
 				if not E.private.ElvUI_EltreumUI.isInstalled.sle then
 					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." installed but not setup, it is highly recommended to install Shadow and Light's profile for Eltruism, found in Eltruism > Addons, before continuing")
 				end
-			elseif IsAddOnLoaded("ElvUI_WindTools") and not IsAddOnLoaded("ElvUI_SLE") and not IsAddOnLoaded('ProjectAzilroka') then
+			elseif IsAddOnLoaded("ElvUI_WindTools") and not IsAddOnLoaded("ElvUI_SLE") then
 				if not E.private.ElvUI_EltreumUI.isInstalled.windtools then
 					ElvUI_EltreumUI:Print("You have ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." installed but not setup, it is highly recommended to install Windtools profile for Eltruism, found in Eltruism > Addons, before continuing")
 				end
-			elseif IsAddOnLoaded("ElvUI_WindTools") and IsAddOnLoaded("ElvUI_SLE") and not IsAddOnLoaded('ProjectAzilroka') then
+			elseif IsAddOnLoaded("ElvUI_WindTools") and IsAddOnLoaded("ElvUI_SLE") then
 				if not E.private.ElvUI_EltreumUI.isInstalled.windtools and not E.private.ElvUI_EltreumUI.isInstalled.sle then
 					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." and ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
 				elseif not E.private.ElvUI_EltreumUI.isInstalled.windtools and E.private.ElvUI_EltreumUI.isInstalled.sle then
 					ElvUI_EltreumUI:Print("You have ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." installed but not setup, it is highly recommended to install Windtools profile for Eltruism, found in Eltruism > Addons, before continuing")
 				elseif not E.private.ElvUI_EltreumUI.isInstalled.sle and E.private.ElvUI_EltreumUI.isInstalled.windtools then
-					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." installed but not setup, it is highly recommended to install Shadow and Light's profile for Eltruism, found in Eltruism > Addons, before continuing")
-				end
-			elseif IsAddOnLoaded('ProjectAzilroka') and not IsAddOnLoaded("ElvUI_WindTools") and not IsAddOnLoaded("ElvUI_SLE") then
-				if not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ProjectAzilroka installed but not setup, it is highly recommended to install its profile for Eltruism, found in Eltruism > Addons, before continuing")
-				end
-			elseif IsAddOnLoaded('ProjectAzilroka') and IsAddOnLoaded("ElvUI_WindTools") and not IsAddOnLoaded("ElvUI_SLE") then
-				if not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka and not E.private.ElvUI_EltreumUI.isInstalled.windtools then
-					ElvUI_EltreumUI:Print("You have ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." and ProjectAzilroka installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka and E.private.ElvUI_EltreumUI.isInstalled.windtools then
-					ElvUI_EltreumUI:Print("You have ProjectAzilroka installed but not setup, it is highly recommended to install its profile for Eltruism, found in Eltruism > Addons, before continuing")
-				end
-			elseif IsAddOnLoaded('ProjectAzilroka') and not IsAddOnLoaded("ElvUI_WindTools") and IsAddOnLoaded("ElvUI_SLE") then
-				if not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka and not E.private.ElvUI_EltreumUI.isInstalled.sle then
-					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." and ProjectAzilroka installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka and E.private.ElvUI_EltreumUI.isInstalled.sle then
-					ElvUI_EltreumUI:Print("You have ProjectAzilroka installed but not setup, it is highly recommended to install its profile for Eltruism, found in Eltruism > Addons, before continuing")
-				end
-			elseif IsAddOnLoaded('ProjectAzilroka') and IsAddOnLoaded("ElvUI_WindTools") and IsAddOnLoaded("ElvUI_SLE") then
-				if not E.private.ElvUI_EltreumUI.isInstalled.windtools and not E.private.ElvUI_EltreumUI.isInstalled.sle and not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r"..", ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." and ProjectAzilroka installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif E.private.ElvUI_EltreumUI.isInstalled.windtools and not E.private.ElvUI_EltreumUI.isInstalled.sle and not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." and ProjectAzilroka installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif E.private.ElvUI_EltreumUI.isInstalled.windtools and E.private.ElvUI_EltreumUI.isInstalled.sle and not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ProjectAzilroka installed but not setup, it is highly recommended to install its profile for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif not E.private.ElvUI_EltreumUI.isInstalled.windtools and E.private.ElvUI_EltreumUI.isInstalled.sle and not E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." and ProjectAzilroka installed but not setup, it is highly recommended to install their profiles for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif not E.private.ElvUI_EltreumUI.isInstalled.windtools and E.private.ElvUI_EltreumUI.isInstalled.sle and E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
-					ElvUI_EltreumUI:Print("You have ".."|cff5385edW|r|cff5094eai|r|cff4da4e7n|r|cff4ab4e4d|r|cff47c0e1T|r|cff44cbdfo|r|cff41d7ddo|r|cff41d7ddl|r|cff41d7dds|r".." installed but not setup, it is highly recommended to install Windtools profile for Eltruism, found in Eltruism > Addons, before continuing")
-				elseif E.private.ElvUI_EltreumUI.isInstalled.windtools and not E.private.ElvUI_EltreumUI.isInstalled.sle and E.private.ElvUI_EltreumUI.isInstalled.projectazilroka then
 					ElvUI_EltreumUI:Print("You have ".."|cff9482c9S|r|cff8c8ac9h|r|cff8591c9a|r|cff809bc9d|r|cff7fa6c9o|r|cff7eb2c9w|r |cff6fcac1a|r|cff5de7b8n|r|cff4bfdaed|r |cff3cfda2L|r|cff2cfd97i|r|cff20fd7bg|r|cff16fd55h|r|cff0cfd2ft|r".." installed but not setup, it is highly recommended to install Shadow and Light's profile for Eltruism, found in Eltruism > Addons, before continuing")
 				end
 			end
@@ -147,7 +139,7 @@ function ElvUI_EltreumUI:OldVersionCheck()
 	end
 
 	if E.db.ElvUI_EltreumUI.skins.doom.maxAlpha > 1 then --fix alpha values
-		E.db.ElvUI_EltreumUI.skins.doom.maxAlpha = (E.db.ElvUI_EltreumUI.skins.doom.maxAlpha/100)
+		E.db.ElvUI_EltreumUI.skins.doom.maxAlpha = (E.db.ElvUI_EltreumUI.skins.doom.maxAlpha * 0.01)
 	end
 
 	--remove entries no longer used

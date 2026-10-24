@@ -27,34 +27,30 @@ _G["BINDING_NAME_CLICK EltruismQuestItem11:LeftButton"] = "Quest Item 11"
 _G["BINDING_NAME_CLICK EltruismQuestItem12:LeftButton"] = "Quest Item 12"
 
 --Constants
-local rawVersion = GetAddOnMetadata("ElvUI_EltreumUI", 'Version')
+local rawVersion,extra = GetAddOnMetadata("ElvUI_EltreumUI", 'Version')
 if stringfind(rawVersion, 'project%-version') then
 	ElvUI_EltreumUI.Version = "5.1.6-Dev"
+	ElvUI_EltreumUI.DevRelease = true
+elseif extra and extra ~= "" then
+	ElvUI_EltreumUI.DevRelease = true
 else
 	ElvUI_EltreumUI.Version = stringgsub(rawVersion, "^v", "")
+	ElvUI_EltreumUI.DevRelease = false
 end
 ElvUI_EltreumUI.Config = {}
 --ElvUI_EltreumUI.Name = '|cff82B4ffEltruism|r'
 ElvUI_EltreumUI.Name = E:TextGradient("Eltruism", 0.50, 0.70, 1, 0.67, 0.95, 1)
 ElvUI_EltreumUI.Spec = 0
-ElvUI_EltreumUI.RequiredElvUI = 15.26
 
 function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	if not E.private.ElvUI_EltreumUI.install_version then
 		return
 	end
+	ElvUI_EltreumUI:CombatMusic('PLAYER_ENTERING_WORLD')
 	if not ElvDB.EltruismDisabledAddOns then
 		ElvDB.EltruismDisabledAddOns = {}
 	end
-	if E.db.ElvUI_EltreumUI.deepLwarning then
-		if E.global.general.locale == "esMX" or E.global.general.locale == "esES" then
-			ElvUI_EltreumUI:Print("La traducción al español es de DeepL y está en pruebas, los comentarios son bienvenidos.\n Escribe /eltruism translate para desactivar este mensaje")
-		elseif E.global.general.locale == "frFR" then
-			ElvUI_EltreumUI:Print("La traduction française provient de DeepL et est en cours de test, les commentaires sont les bienvenus.\n Tapez /eltruism translate pour désactiver ce message.")
-		end
-	end
-
-	if E.Retail then --due to an issue in retail disable the scoreboard skin (_G.PVPMatchScoreboard)
+	if E.Modern then --due to an issue in retail disable the scoreboard skin (_G.PVPMatchScoreboard)
 		E.private.skins.blizzard.bgscore = false
 	end
 
@@ -82,6 +78,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:SkinVehicleButton() -- re-skin vehicle button like elvui did
 	ElvUI_EltreumUI:CacheGradients()
 	ElvUI_EltreumUI:GradientColorTableUpdate() -- should load table on init
+	ElvUI_EltreumUI:InitTooltip()
 	ElvUI_EltreumUI:ClassIconsOnCharacterPanel() --adds class icons to character panel
 	ElvUI_EltreumUI:CursorInit() --starts cursor modules
 	ElvUI_EltreumUI:SkinMailZone() --skins zone change messages and mail font
@@ -111,7 +108,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:HideABKeyPress() -- hide keypress if user wants
 	ElvUI_EltreumUI:NameplateRestedOverlaps() -- sets overlaps depending if rested/not
 	ElvUI_EltreumUI:PlayerUFEffects() -- model effect on player/target
-	if not E.Retail then
+	if not E.Modern then
 		ElvUI_EltreumUI:Doom() -- fork of Doom's Cooldown Pulse
 	end
 	ElvUI_EltreumUI:LootText() -- gets the combat text going if not enabled
@@ -119,16 +116,26 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:ArenaQuest() --hides quests when in arena/bgs
 	ElvUI_EltreumUI:SkinLevelUp() --skins level up toast
 	ElvUI_EltreumUI:ExpandedTalents() --makes talents fit in one window without scroll in classic, scale in retail
-	if E.Retail then
-		ElvUI_EltreumUI:WaypointTimeToArrive() --adds an ETA below waypoints
-		ElvUI_EltreumUI:UpdateSuperTrackedColor() --colors the waypoint icon
-		ElvUI_EltreumUI:EltruismHideTalkingHead() --hides talking head from world quests
+	if E.Modern then
 		ElvUI_EltreumUI:ObjectiveTrackerAnchor()
 		if E.db.ElvUI_EltreumUI.quests.anchor then
 			ElvUI_EltreumUI:NewRetailEditModeLayout(true) --check if they dont have a custom edit mode, if not then add a new one to fix the anchor
 		end
-		ElvUI_EltreumUI.Spec = GetSpecializationInfo(GetSpecialization())
+		if E.Retail then
+			ElvUI_EltreumUI.Spec = (E:NotSecretValue(GetSpecialization()) and GetSpecializationInfo(GetSpecialization())) or 0
+		else
+			if ElvUI_EltreumUI:CheckForeverSpec() then --returns nil if no value
+				ElvUI_EltreumUI.Spec = ElvUI_EltreumUI:CheckForeverSpec()
+			end
+		end
 		ElvUI_EltreumUI:ClickCastingShortcut() --adds a button to the spellbook to show the click casting menu
+		ElvUI_EltreumUI:WaypointTimeToArrive() --adds an ETA below waypoints
+		ElvUI_EltreumUI:UpdateSuperTrackedColor() --colors the waypoint icon
+		if E.Retail then
+			ElvUI_EltreumUI:EltruismHideTalkingHead() --hides talking head from world quests
+		else
+			ElvUI_EltreumUI:UpdateAvgIlvl() --updates the ilvl of the character at login so its not 0
+		end
 	else
 		if not E.Mists then
 			ElvUI_EltreumUI:DynamicClassicDatatext() --toggles datatext for warlocks/hunters to show soulshards/ammo
@@ -144,7 +151,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	if E.Mists then
 		ElvUI_EltreumUI.Spec = GetSpecialization()
 	end
-	if not (E.Classic or E.TBC or E.Wrath) then
+	if not (E.Classic or E.TBC or E.Wrath or E.Forever) then
 		ElvUI_EltreumUI:DungeonRoleIcons() -- add spec icons to the lfg frame
 	end
 	ElvUI_EltreumUI:SkinQuests() --skins quest objective frame to be class colored
@@ -187,11 +194,18 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:LoadIconTags()
 	ElvUI_EltreumUI:LoadNameTags()
 	ElvUI_EltreumUI:LoadOtherTags()
+	ElvUI_EltreumUI:GradientNameplatesHooks()
 end
 
 function ElvUI_EltreumUI:FIRST_FRAME_RENDERED()
 	ElvUI_EltreumUI:Ace3Skin() --Ace3 Skin hook setup
 	ElvUI_EltreumUI:SetTemplateSkin() -- hook settemplate elvui skin
+	E:Delay(3, function() --delay counting otherwise doesnt work in retail (where coroutines are)
+		if E.db.ElvUI_EltreumUI.unitframes.UFmodifications then
+			ElvUI_EltreumUI:CustomTexture("testunit")
+			ElvUI_EltreumUI:GradientUF("testunit")
+		end
+	end)
 end
 
 function ElvUI_EltreumUI:COMBAT_LOG_EVENT_UNFILTERED()
@@ -230,6 +244,26 @@ end
 function ElvUI_EltreumUI:INSTANCE_ENCOUNTER_ENGAGE_UNIT(event)
 	ElvUI_EltreumUI:CombatMusic(event)
 	ElvUI_EltreumUI:QuestCombat(event)
+end
+
+function ElvUI_EltreumUI:DUEL_REQUESTED(event)
+	ElvUI_EltreumUI:CombatMusic(event)
+end
+
+function ElvUI_EltreumUI:DUEL_TO_THE_DEATH_REQUESTED(event)
+	ElvUI_EltreumUI:CombatMusic(event)
+end
+
+function ElvUI_EltreumUI:DUEL_FINISHED(event)
+	ElvUI_EltreumUI:CombatMusic(event)
+end
+
+function ElvUI_EltreumUI:CHAT_MSG_SYSTEM(event, ...)
+	ElvUI_EltreumUI:CombatMusic(event, ...)
+end
+
+function ElvUI_EltreumUI:PLAYER_DEAD(event)
+	ElvUI_EltreumUI:CombatMusic(event)
 end
 
 function ElvUI_EltreumUI:GROUP_ROSTER_UPDATE()
@@ -303,9 +337,6 @@ function ElvUI_EltreumUI:ZONE_CHANGED_INDOORS()
 	ElvUI_EltreumUI:FriendlyNameplates()
 	ElvUI_EltreumUI:BattleRes()
 	ElvUI_EltreumUI:ArenaQuest()
-	if E.Retail then
-		ElvUI_EltreumUI:DamageMeterZoneCheck()
-	end
 	if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.rotate then
 		ElvUI_EltreumUI:MinimapCardinalDirectionsRotateInstance()
 	end
@@ -330,31 +361,35 @@ function ElvUI_EltreumUI:PLAYER_TARGET_CHANGED()
 	end
 end
 
-local currenttalentretail = E.Retail and GetSpecialization()
+local currenttalentretail = E.Modern and GetSpecialization()
 local currenttalentmists = (E.Mists or E.TBC or E.Wrath) and GetSpecialization()
 local GetActiveTalentGroup = _G.GetActiveTalentGroup
 local currenttalentclassic = (E.ClassicSOD or E.TBC or E.Wrath) and GetActiveTalentGroup()
 function ElvUI_EltreumUI:ACTIVE_TALENT_GROUP_CHANGED()
-	if E.Retail then
+	if E.Modern then
 		ElvUI_EltreumUI:ObjectiveTrackerAnchor() --fire the anchor again
 	end
-	local newtalentretail = E.Retail and GetSpecialization()
+	local newtalentretail = E.Modern and GetSpecialization()
 	local cnewtalentmists = E.Mists and GetSpecialization() --GetActiveTalentGroup is going to be removed use C_SpecializationInfo.GetActiveSpecGroup instead TOOD
 	local cnewtalentclassic = (E.ClassicSOD or E.TBC or E.Wrath) and GetActiveTalentGroup()
 	if E.Retail then
-		ElvUI_EltreumUI.Spec = GetSpecializationInfo(GetSpecialization())
+		ElvUI_EltreumUI.Spec = (E:NotSecretValue(GetSpecialization()) and GetSpecializationInfo(GetSpecialization())) or 0
+	elseif E.Forever then
+		if ElvUI_EltreumUI:CheckForeverSpec() then --returns nil if no value
+			ElvUI_EltreumUI.Spec = ElvUI_EltreumUI:CheckForeverSpec()
+		end
 	elseif E.Mists then
 		ElvUI_EltreumUI.Spec = GetSpecialization()
 	elseif E.ClassicSOD or E.TBC or E.Wrath then
 		ElvUI_EltreumUI.Spec = GetActiveTalentGroup()
 	end
-	if (E.Retail and currenttalentretail ~= newtalentretail) or (E.Mists and currenttalentmists ~= cnewtalentmists) or ((E.ClassicSOD or E.TBC or E.Wrath) and currenttalentclassic ~= cnewtalentclassic) then
+	if (E.Modern and currenttalentretail ~= newtalentretail) or (E.Mists and currenttalentmists ~= cnewtalentmists) or ((E.ClassicSOD or E.TBC or E.Wrath) and currenttalentclassic ~= cnewtalentclassic) then
 		currenttalentretail = newtalentretail
 		currenttalentmists = cnewtalentmists
 		currenttalentclassic = cnewtalentclassic
 		ElvUI_EltreumUI:ClassIconsOnCharacterPanel()
 		ElvUI_EltreumUI:FixChatToggles()
-		if E.Retail or (E.ClassicSOD or E.Mists or E.TBC or E.Wrath) then
+		if E.Modern or (E.ClassicSOD or E.Mists or E.TBC or E.Wrath) then
 			ElvUI_EltreumUI:NamePlateOptions()
 			ElvUI_EltreumUI:Shadows()
 			if E.private.nameplates.enable then
@@ -446,6 +481,13 @@ function ElvUI_EltreumUI:Initialize()
 	ElvUI_EltreumUI:RegisterEvent('ENCOUNTER_START') --for quests and combat music
 	ElvUI_EltreumUI:RegisterEvent('ENCOUNTER_END') --for quests and combat music
 	ElvUI_EltreumUI:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT') ----for quests and combat music
+	ElvUI_EltreumUI:RegisterEvent('DUEL_REQUESTED') --for duel music
+	if E.ClassicHC then
+		ElvUI_EltreumUI:RegisterEvent('DUEL_TO_THE_DEATH_REQUESTED') --for makgora duel music
+	end
+	ElvUI_EltreumUI:RegisterEvent('DUEL_FINISHED') --for duel music
+	ElvUI_EltreumUI:RegisterEvent('CHAT_MSG_SYSTEM') --for duel music
+	ElvUI_EltreumUI:RegisterEvent('PLAYER_DEAD') --for duel music
 	ElvUI_EltreumUI:RegisterEvent('GROUP_ROSTER_UPDATE') --to store group roster in order to compare in party/raid death
 	ElvUI_EltreumUI:RegisterEvent('PLAYER_ENTERING_WORLD') --for most of the addon
 	ElvUI_EltreumUI:RegisterEvent('PLAYER_FLAGS_CHANGED') -- for afk music
@@ -458,7 +500,7 @@ function ElvUI_EltreumUI:Initialize()
 	ElvUI_EltreumUI:RegisterEvent('ZONE_CHANGED_NEW_AREA') --for hiding healthbar in friendly np
 	ElvUI_EltreumUI:RegisterEvent('PLAYER_TARGET_CHANGED') --for power bar and light mode texture
 	ElvUI_EltreumUI:RegisterEvent('INSPECT_READY')
-	if E.Retail then
+	if E.Modern then
 		ElvUI_EltreumUI:RegisterEvent('GOSSIP_SHOW') --for rogue order hall
 		ElvUI_EltreumUI:RegisterEvent('CHALLENGE_MODE_COMPLETED') --for auto screenshot
 		ElvUI_EltreumUI:RegisterEvent('ACHIEVEMENT_EARNED') --for auto screenshot
@@ -475,12 +517,12 @@ function ElvUI_EltreumUI:Initialize()
 	if E.Classic then
 		ElvUI_EltreumUI:RegisterEvent('PLAYER_AVG_ITEM_LEVEL_UPDATE')
 	end
-	--ElvUI_EltreumUI:RegisterEvent("FIRST_FRAME_RENDERED")
+	ElvUI_EltreumUI:RegisterEvent("FIRST_FRAME_RENDERED")
 	--because some cvars keep resetting for some reason
 	ElvUI_EltreumUI:RegisterEvent('PLAYER_LEAVING_WORLD')
 	ElvUI_EltreumUI:RegisterEvent('PLAYER_LOGOUT')
 	ElvUI_EltreumUI:RegisterEvent("UPDATE_PENDING_MAIL") --for mail sound/icon
-	if E.Retail then
+	if E.Modern then
 		ElvUI_EltreumUI:RegisterEvent("CHALLENGE_MODE_START") --for m+ hiding objective tracker
 		ElvUI_EltreumUI:RegisterEvent("CHALLENGE_MODE_COMPLETED") --for m+ hiding objective tracker
 		ElvUI_EltreumUI:RegisterEvent("CHALLENGE_MODE_RESET") --for m+ hiding objective tracker
@@ -491,12 +533,6 @@ local function CallbackInitialize()
 	ElvUI_EltreumUI:Initialize()
 end
 E:RegisterModule(addon, CallbackInitialize)
-
---blizzard removed the cpu functions, rip ElvUI_CPU
---[[if IsAddOnLoaded("ElvUI_CPU") then
-	ElvUI_CPU:RegisterPlugin(ElvUI_EltreumUI)
-	--ElvUIDev:RegisterPluginModule("ElvUI_EltreumUI", moduleName, module)
-end]]
 
 --12.1 event order list
 --[[local eventtester = CreateFrame("FRAME")

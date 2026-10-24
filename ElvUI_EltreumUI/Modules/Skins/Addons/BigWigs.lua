@@ -2,6 +2,7 @@ local E = unpack(ElvUI)
 local S = E:GetModule('Skins')
 local _G = _G
 local tostring = _G.tostring
+local pairs = _G.pairs
 
 do
 
@@ -229,8 +230,6 @@ do
 				icon:Show()
 				icon:SetSize(bar:GetWidth()*1.5, bar:GetWidth()*1.5) --icon size
 				bar:Set("bigwigs:restoreicon", tex)
-
-
 
 				--set icon to the statusbar
 				icon:ClearAllPoints()

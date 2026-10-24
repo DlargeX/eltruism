@@ -1,7 +1,7 @@
 local E = unpack(ElvUI)
 local _G = _G
-local hooksecurefunc = _G.hooksecurefunc
 local select = _G.select
+local valuecolors = E.myClassColor
 
 function ElvUI_EltreumUI:DarkMode()
 	if E.private.unitframe.enable then
@@ -220,7 +220,7 @@ function ElvUI_EltreumUI:DarkMode()
 		_G.RightChatToggleButton:SetAlpha(1)
 		_G.RightChatToggleButton:Show()
 
-		ElvUI_EltreumUI:Print("Unitframes set to Dark Mode")
+		ElvUI_EltreumUI:Print("Unitframes set to Dark Mode".." |TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\DarkMode.tga:14:128:0:0:256:32:0:256:0:32:"..(valuecolors.r* 255)..":"..(valuecolors.g* 255)..":"..(valuecolors.b* 255).."|t")
 	end
 end
 
@@ -383,7 +383,7 @@ function ElvUI_EltreumUI:LightMode()
 		_G.RightChatToggleButton:SetAlpha(1)
 		_G.RightChatToggleButton:Show()
 
-		ElvUI_EltreumUI:Print("Unitframes set to Light Mode")
+		ElvUI_EltreumUI:Print("Unitframes set to Light Mode".." |TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\LightMode.tga:14:128:0:0:256:32:0:256:0:32:"..(valuecolors.r* 255)..":"..(valuecolors.g* 255)..":"..(valuecolors.b* 255).."|t")
 	end
 end
 
@@ -640,7 +640,11 @@ function ElvUI_EltreumUI:GradientMode()
 				end
 			end
 			if E.db["unitframe"]["units"]["player"]["customTexts"] and E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumName"] then
-				E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumName"]["text_format"] = "[name] [eltruism:IconOutline:player] [eltruism:raidmarker]"
+				if E.Forever then
+					E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumName"]["text_format"] = "[name:eltruism:abbreviate] [eltruism:IconOutline:player] [eltruism:raidmarker]"
+				else
+					E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumName"]["text_format"] = "[name] [eltruism:IconOutline:player] [eltruism:raidmarker]"
+				end
 			end
 			if E.db["unitframe"]["units"]["player"]["customTexts"] and E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumPower"] then
 				E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumPower"]["text_format"] = "[power:current:shortvalue]"
@@ -719,24 +723,30 @@ function ElvUI_EltreumUI:GradientMode()
 	end
 end
 
+function ElvUI_EltreumUI:TotemBackground()
+	local header = _G["ElvUF_Player"]
+	if not header then return end
+	for i = 1, header:GetNumChildren() do
+		local group = select(i, header:GetChildren())
+		if group and group.GetNumChildren then
+			for j = 1, group:GetNumChildren() do
+				local unitbutton = select(j, group:GetChildren())
+				if unitbutton and unitbutton.bg then
+					unitbutton.bg:SetVertexColor(0, 0, 0)
+				end
+			end
+		end
+	end
+end
+
 function ElvUI_EltreumUI:ShamanTextureMode()
 	if (E.Mists or E.TBC or E.Wrath or E.Classic) and E.myclass == 'SHAMAN' then
 		if E.db.ElvUI_EltreumUI.unitframes.darkpowercolor and E.private.unitframe.enable then
 			local UF = E:GetModule('UnitFrames') --only classpower that is actually in UF instead of NP
-			local function TotemBackground()
-				local header = _G["ElvUF_Player"]
-				for i = 1, header:GetNumChildren() do
-					local group = select(i, header:GetChildren())
-					for j = 1, group:GetNumChildren() do
-						local unitbutton = select(j, group:GetChildren())
-						if unitbutton and unitbutton.bg then
-							unitbutton.bg:SetVertexColor(0, 0, 0)
-						end
-					end
-				end
+			if not self:IsHooked(UF, 'Construct_Totems') then
+				self:SecureHook(UF, 'Construct_Totems', 'TotemBackground')
 			end
-			hooksecurefunc(UF, 'Construct_Totems', TotemBackground)
-			TotemBackground()
+			self:TotemBackground()
 		end
 	end
 end

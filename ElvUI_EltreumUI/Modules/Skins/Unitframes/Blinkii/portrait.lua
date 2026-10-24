@@ -4,7 +4,6 @@ local _G = _G
 local SetPortraitTexture = _G.SetPortraitTexture
 local UnitExists = _G.UnitExists
 local tinsert = _G.tinsert
-local UF = E:GetModule("UnitFrames")
 local UnitGUID = _G.UnitGUID
 local select, strsplit = _G.select, _G.strsplit
 local mathmax = _G.math.max
@@ -20,7 +19,10 @@ local InCombatLockdown = _G.InCombatLockdown
 local UnitCastingInfo = _G.UnitCastingInfo
 local UnitChannelInfo = _G.UnitChannelInfo
 local CreateFrame = _G.CreateFrame
-local hooksecurefunc = _G.hooksecurefunc
+local unpack = _G.unpack
+local type = _G.type
+local pairs = _G.pairs
+local ipairs = _G.ipairs
 
 ElvUI_EltreumUI.Portraits = {}
 local module = ElvUI_EltreumUI.Portraits
@@ -157,7 +159,7 @@ local function DeadDesaturation(self)
 	end
 end
 
-local function SetPortraits(frame, unit, masking, mirror)
+local function SetPortraits(frame, unit, mirror)
 	if E.db.ElvUI_EltreumUI.unitframes.portraits.general.classicons and (UnitIsPlayer(unit) or (E.Retail and UnitInPartyIsAI(unit))) then
 		local class = select(2, UnitClass(unit))
 		if not class then return end
@@ -244,7 +246,7 @@ end
 
 local function GetNPCID(unit)
 	if not ElvUI_EltreumUI:IsThisASafeSecret() then
-		return " "
+		return
 	else
 		local guid = UnitGUID(unit)
 		return guid and select(6, strsplit("-", guid))
@@ -317,7 +319,7 @@ local function UpdatePortrait(portraitFrame, force)
 	-- Unit Portrait
 	offset = GetOffset(setting.size)
 	UpdateTexture(portraitFrame, "portrait", bg_textures.unknown, 1)
-	SetPortraits(portraitFrame, unit, false, setting.mirror)
+	SetPortraits(portraitFrame, unit, setting.mirror)
 	portraitFrame.portrait:SetPoint("TOPLEFT", 0 + offset, 0 - offset)
 	portraitFrame.portrait:SetPoint("BOTTOMRIGHT", 0 - offset, 0 + offset)
 
@@ -389,7 +391,9 @@ local function UpdatePortrait(portraitFrame, force)
 			portraitFrame.extraShadow:Hide()
 		end
 
-		CheckRareElite(portraitFrame, unit, unitColor)
+		if not E.Modern then
+			CheckRareElite(portraitFrame, unit, unitColor)
+		end
 	end
 
 	-- Corner
@@ -634,12 +638,12 @@ local function UpdatePortraitTexture(self, unit)
 	local isPlayer = UnitIsPlayer(unit)
 	local unitColor = getColor(unit, isPlayer, self.unit_is_dead)
 
-	SetPortraits(self, unit, false, self.settings.mirror)
+	SetPortraits(self, unit, self.settings.mirror)
 	setColor(self.texture, unitColor, self.settings.mirror)
 
 	if E.db.ElvUI_EltreumUI.unitframes.portraits.general.corner and self.textures.corner then setColor(self.corner, unitColor, self.settings.mirror) end
 
-	if self.settings.extraEnable and self.extra and not isPlayer then
+	if not E.Modern and self.settings.extraEnable and self.extra and not isPlayer then
 		CheckRareElite(self, unit, unitColor)
 	elseif self.extra then
 		HideRareElite(self)
@@ -789,7 +793,7 @@ local function CreatePortraits(name, unit, parentFrame, unitSettings, events, un
 	UpdatePortrait(module[name])
 end
 
-local function ToggleForceShowGroupFrames(_, group, numGroup)
+function ElvUI_EltreumUI:Blinkii_ToggleForceShowGroupFrames(group, numGroup)
 	if group == "boss" or group == "arena" then
 		local name = (group == "boss") and "Boss" or "Arena"
 
@@ -799,8 +803,8 @@ local function ToggleForceShowGroupFrames(_, group, numGroup)
 	end
 end
 
-local function HeaderConfig(_, header, configMode)
-	if header.groups and header.groupName == "party" then
+function ElvUI_EltreumUI:Blinkii_HeaderConfig(header)
+	if header and header.groups and header.groupName == "party" then
 		for i = 1, #header.groups[1] do
 			if module["Party" .. i] then UpdatePortrait(module["Party" .. i], true) end
 		end
@@ -849,7 +853,9 @@ function ElvUI_EltreumUI:InitializePortraits(force)
 
 		if _G.ElvUF_PartyGroup1UnitButton1 and E.db.ElvUI_EltreumUI.unitframes.portraits.party.enable then
 			for i = 1, 5 do
-				CreatePortraits("Party" .. i, _G["ElvUF_PartyGroup1UnitButton" .. i].unit, _G["ElvUF_PartyGroup1UnitButton" .. i], E.db.ElvUI_EltreumUI.unitframes.portraits.party)
+				if _G["ElvUF_PartyGroup1UnitButton" .. i] then
+					CreatePortraits("Party" .. i, _G["ElvUF_PartyGroup1UnitButton" .. i].unit, _G["ElvUF_PartyGroup1UnitButton" .. i], E.db.ElvUI_EltreumUI.unitframes.portraits.party)
+				end
 			end
 		elseif module.Party1 then
 			for i = 1, 5 do
@@ -883,13 +889,6 @@ function ElvUI_EltreumUI:InitializePortraits(force)
 
 		-- update all portraits, force = update cast events
 		UpdateAllPortraits(force)
-
-		-- for demo frames - party, boss & arena
-		if not module.needReloadUI then
-			hooksecurefunc(UF, "ToggleForceShowGroupFrames", ToggleForceShowGroupFrames)
-			hooksecurefunc(UF, "HeaderConfig", HeaderConfig)
-			module.needReloadUI = true
-		end
 	else
 		for _, unitPortrait in pairs(module) do
 			if type(unitPortrait) == "table" and unitPortrait.portrait then RemovePortrait(unitPortrait) end

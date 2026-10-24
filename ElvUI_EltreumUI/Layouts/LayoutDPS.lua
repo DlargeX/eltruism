@@ -5,7 +5,7 @@ local GetPhysicalScreenSize = _G.GetPhysicalScreenSize
 
 function ElvUI_EltreumUI:SetupLayoutDPS(silent)
 	if not E.db.movers then E.db.movers = {} end
-	if E.Retail then
+	if E.Modern then
 		E.db["unitframe"]["units"]["player"]["customTexts"] = E.db["unitframe"]["units"]["player"]["customTexts"] or {}
 		E.db["unitframe"]["units"]["player"]["customTexts"]["EltreumPlayerAbsorb"] = {
 		["enable"] = false
@@ -467,7 +467,7 @@ function ElvUI_EltreumUI:SetupLayoutDPS(silent)
 		E.db["actionbar"]["totemBar"]["visibility"] = "[combat] show;[@target, noexists] hide; [vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
 	end]]
 	E.db["movers"]["VOICECHAT"] = "TOPLEFT,ElvUIParent,TOPLEFT,329,-154"
-	if E.Retail then
+	if E.Modern then
 		E.db["movers"]["VehicleLeaveButton"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-183,-179"
 	else
 		E.db["movers"]["VehicleLeaveButton"] = "TOPRIGHT,ElvUIParent,TOPRIGHT,-176,-145"
@@ -873,9 +873,9 @@ function ElvUI_EltreumUI:SetupLayoutDPS(silent)
 	E.db["unitframe"]["units"]["player"]["debuffs"]["height"] = 25
 	E.db["unitframe"]["units"]["player"]["debuffs"]["keepSizeRatio"] = false
 	E.db["unitframe"]["units"]["player"]["debuffs"]["sizeOverride"] = 30
-	E.db["unitframe"]["units"]["player"]["debuffs"]["yOffset"] = -32
+	E.db["unitframe"]["units"]["player"]["debuffs"]["yOffset"] = -53
 	E.db["unitframe"]["units"]["player"]["debuffs"]["xOffset"] = -15
-	E.db["unitframe"]["units"]["player"]["debuffs"]["numrows"] = 4
+	E.db["unitframe"]["units"]["player"]["debuffs"]["numrows"] = 1
 	E.db["unitframe"]["units"]["player"]["debuffs"]["perrow"] = 4
 	E.db["unitframe"]["units"]["player"]["debuffs"]["spacing"] = 2
 	E.db["unitframe"]["units"]["player"]["disableMouseoverGlow"] = true
@@ -1176,7 +1176,7 @@ function ElvUI_EltreumUI:SetupLayoutDPS(silent)
 	E.db["unitframe"]["units"]["target"]["buffs"]["sizeOverride"] = 30
 	E.db["unitframe"]["units"]["target"]["buffs"]["sortDirection"] = "ASCENDING"
 	E.db["unitframe"]["units"]["target"]["buffs"]["xOffset"] = 15
-	E.db["unitframe"]["units"]["target"]["buffs"]["yOffset"] = -32
+	E.db["unitframe"]["units"]["target"]["buffs"]["yOffset"] = -65
 	E.db["unitframe"]["units"]["target"]["buffs"]["enable"] = true
 	E.db["unitframe"]["units"]["target"]["castbar"]["customColor"]["colorBackdrop"]["b"] = 0
 	E.db["unitframe"]["units"]["target"]["castbar"]["customColor"]["colorBackdrop"]["g"] = 0

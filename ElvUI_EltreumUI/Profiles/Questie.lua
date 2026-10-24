@@ -33,7 +33,7 @@ function ElvUI_EltreumUI:GetQuestieProfile()
 
 					["nameplateX"] = 146,
 					["nameplateY"] = 0,
-					["nameplateTargetFrameEnabled"] = true,
+					["nameplateTargetFrameEnabled"] = E.Forever and false or true,
 
 					["alwaysGlowMinimap"] = true,
 					["questObjectiveColors"] = true,
@@ -41,8 +41,6 @@ function ElvUI_EltreumUI:GetQuestieProfile()
 					["nameplateTargetFrameScale"] = 1,
 					["trackerSortObjectives"] = "byProximity",
 					["soundOnQuestComplete"] = true,
-
-
 
 					["trackerEnabled"] = false,
 					["onlyPartyShared"] = true,
@@ -55,6 +53,14 @@ function ElvUI_EltreumUI:GetQuestieProfile()
 					["currentBackdropFader"] = true,
 					["trackerbindOpenQuestLog"] = "right",
 					["trackerColorObjectives"] = "whiteAndGreen",
+
+					--new since forever
+					["enableTooltipsBreadcrumbQuests"] = true,
+					--["migrationVersion"] = 40,
+					--["nameplateEnabled"] = false,
+					["questieShutUp"] = true,
+					--["tutorialRejectInBattlegroundsDone"] = false,
+					--["tutorialShowRunesDone"] = false,
 				}
 				QuestieConfig["profileKeys"][E.mynameRealm] = "Eltreum"
 			end

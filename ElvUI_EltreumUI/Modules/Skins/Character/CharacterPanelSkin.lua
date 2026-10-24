@@ -30,8 +30,9 @@ local stringformat = string.format
 local InCombatLockdown = _G.InCombatLockdown
 local format = _G.format
 local GetItemInfo = _G.C_Item and _G.C_Item.GetItemInfo or _G.GetItemInfo
-
---GetTalentTabInfo is going to be removed, use C_SpecializationInfo.GetSpecializationInfo instead TODO
+local next = _G.next
+local GetUnitSpeed = _G.GetUnitSpeed
+local canaccessvalue = _G.canaccessvalue
 
 --improving character panel
 local CharacterFrame = _G.CharacterFrame
@@ -61,13 +62,13 @@ if E.Retail then
 	CharacterFrame.EltruismSpeedDescTooltip = CreateFrame("Frame", "EltruismSpeedDesc")
 end
 
-if not E.Retail then
-	CharacterFrame.Text = CharacterFrame:CreateFontString("EltruismIlvlBanner", "OVERLAY", "GameFontNormal")
-	CharacterFrame.Text2 = CharacterFrame:CreateFontString("EltruismIlvlText", "OVERLAY", "GameFontNormal")
-	CharacterFrame.Text3 = CharacterFrame:CreateFontString("EltruismAttributes", "OVERLAY", "GameFontNormal")
-	CharacterFrame.Text4 = CharacterFrame:CreateFontString("EltruismSpecBanner", "OVERLAY", "GameFontNormal")
-	CharacterFrame.Text5 = CharacterFrame:CreateFontString("EltruismSpec", "OVERLAY", "GameFontNormal")
-	CharacterFrame.Text6 = CharacterFrame:CreateFontString("CombatWarningText", "OVERLAY", "GameFontNormal")
+if not E.Modern then
+	CharacterFrame.EltruismText = CharacterFrame:CreateFontString("EltruismIlvlBanner", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText2 = CharacterFrame:CreateFontString("EltruismIlvlText", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText3 = CharacterFrame:CreateFontString("EltruismAttributes", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText4 = CharacterFrame:CreateFontString("EltruismSpecBanner", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText5 = CharacterFrame:CreateFontString("EltruismSpec", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText6 = CharacterFrame:CreateFontString("CombatWarningText", "OVERLAY", "GameFontNormal")
 	CharacterFrame.StatusLine = CreateFrame("StatusBar", "EltruismCharacterBar1", PaperDollItemsFrame)
 	CharacterFrame.StatusLine:SetMinMaxValues(0,100)
 	CharacterFrame.StatusLine:SetValue(100)
@@ -80,6 +81,11 @@ if not E.Retail then
 	CharacterFrame.StatusLine4 = CreateFrame("StatusBar", "EltruismCharacterBar4", PaperDollItemsFrame)
 	CharacterFrame.StatusLine4:SetMinMaxValues(0,100)
 	CharacterFrame.StatusLine4:SetValue(100)
+end
+
+if E.Forever then
+	CharacterFrame.EltruismText2 = CharacterFrame:CreateFontString("EltruismIlvlText", "OVERLAY", "GameFontNormal")
+	CharacterFrame.EltruismText5 = CharacterFrame:CreateFontString("EltruismSpec", "OVERLAY", "GameFontNormal")
 end
 
 if E.TBC or E.Wrath then
@@ -313,19 +319,51 @@ function ElvUI_EltreumUI:GetUnitItemLevel(unit)
 	return total/16
 end
 
+local ClassID = {
+	["WARRIOR"] = 1,
+	["PALADIN"] = 2,
+	["HUNTER"] = 3,
+	["ROGUE"] = 4,
+	["PRIEST"] = 5,
+	["DEATHKNIGHT"] = 6,
+	["SHAMAN"] = 7,
+	["MAGE"] = 8,
+	["WARLOCK"] = 9,
+	["MONK"] = 10,
+	["DRUID"] = 11,
+	["DEMONHUNTER"] = 12,
+	["EVOKER"] = 13,
+}
+local GetNumSpecializationsForClassID  = _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetNumSpecializationsForClassID
+local GetSpecializationInfo  = _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetSpecializationInfo
+
 --turns out classic has the functions to get number of points on talent trees
 function ElvUI_EltreumUI:GetPlayerSpec()
 	--reset variables
 	local points = 0
 	local spec = ""
+	local _, spent1, spent2,spent3
 
-	local _, _, _, _, spent1 = _G.GetTalentTabInfo(1)
-	local _, _, _, _, spent2 = _G.GetTalentTabInfo(2)
-	local _, _, _, _, spent3 = _G.GetTalentTabInfo(3)
-	for i=1, _G.GetNumTalentTabs() do
-		local _, name, _, _, spent = _G.GetTalentTabInfo(i)
-		if spent > 0 and (not points or spent > points) then
-			spec, points = name, spent
+	if E.Forever then
+		--specId, name, description, icon, role, primaryStat, pointsSpent, background, previewPointsSpent, isUnlocked = C_SpecializationInfo.GetSpecializationInfo(specializationIndex [, isInspect [, isPet [, inspectTarget [, sex [, groupIndex [, classID]]]]]])
+		_, _, _, _, _, _, spent1 = GetSpecializationInfo(1)
+		_, _, _, _, _, _, spent2 = GetSpecializationInfo(2)
+		_, _, _, _, _, _, spent3 = GetSpecializationInfo(3)
+		for i=1, GetNumSpecializationsForClassID(ClassID[E.myclass]) do
+			local _, name, _, _, _, _, spent = GetSpecializationInfo(i)
+			if spent > 0 and (not points or spent > points) then
+				spec, points = name, spent
+			end
+		end
+	else
+		_, _, _, _, spent1 = _G.GetTalentTabInfo(1)
+		_, _, _, _, spent2 = _G.GetTalentTabInfo(2)
+		_, _, _, _, spent3 = _G.GetTalentTabInfo(3)
+		for i=1, _G.GetNumTalentTabs() do
+			local _, name, _, _, spent = _G.GetTalentTabInfo(i)
+			if spent > 0 and (not points or spent > points) then
+				spec, points = name, spent
+			end
 		end
 	end
 	if spec ~= nil and not ( (spent1 == spent2) or (spent2 == spent3) or (spent1 == spent3) ) then
@@ -356,7 +394,7 @@ function ElvUI_EltreumUI:GetPlayerSpec()
 		else
 			return spec
 		end
-	else
+	elseif not E.Forever then --forever is just text so dont show this
 		return _G.NONE
 	end
 end
@@ -383,20 +421,25 @@ if not E.Retail then
 	avgilvl:RegisterEvent("PLAYER_ENTERING_WORLD")
 	avgilvl:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	avgilvl:SetScript("OnEvent", function()
-		if CharacterFrame.Text2 then
-			CharacterFrame.Text2:SetText((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("player")*100))/100)
+		if CharacterFrame.EltruismText2 then
+			CharacterFrame.EltruismText2:SetText((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("player")*100)) * 0.01)
 		end
 	end)
 
-	if E.Mists or E.TBC or E.Wrath then
-		local mistsdualspec = CreateFrame("FRAME")
-		mistsdualspec:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-		mistsdualspec:RegisterEvent("PLAYER_TALENT_UPDATE")
-		--mistsdualspec:RegisterEvent("CHARACTER_POINTS_CHANGED")
-		mistsdualspec:SetScript("OnEvent", function()
+	if E.Forever or E.Mists or E.TBC or E.Wrath then
+		local dualspec = CreateFrame("FRAME")
+		dualspec:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+		dualspec:RegisterEvent("PLAYER_TALENT_UPDATE")
+		--dualspec:RegisterEvent("CHARACTER_POINTS_CHANGED")
+		dualspec:SetScript("OnEvent", function()
 			E:Delay(2, function()
-				if CharacterFrame.Text5 and CharacterFrame.Text5:GetText() ~= nil then
-					CharacterFrame.Text5:SetText(ElvUI_EltreumUI:GetPlayerSpec())
+				if CharacterFrame.EltruismText5 and CharacterFrame.EltruismText5:GetText() ~= nil then
+					if E.Forever then
+						local _, specName = ElvUI_EltreumUI:CheckForeverSpec()
+						CharacterFrame.EltruismText5:SetText(specName)
+					else
+						CharacterFrame.EltruismText5:SetText(ElvUI_EltreumUI:GetPlayerSpec())
+					end
 				end
 			end)
 		end)
@@ -618,8 +661,8 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 				CharacterFrame.EltruismSpeedDescTooltip:Show()
 				CharacterFrame.EltruismSpeedDescTooltip:SetScript("OnEnter", function()
 					_G["GameTooltip"]:SetOwner(CharacterFrame.EltruismSpeedDescTooltip, 'ANCHOR_RIGHT')
-					if ElvUI_EltreumUI:IsThisASafeSecret(_G.GetUnitSpeed("player"),true) then
-						_G["GameTooltip"]:AddLine(format(_G.CR_SPEED_TOOLTIP, stringformat('%.2f', (_G.GetUnitSpeed("player"))), ((_G.GetUnitSpeed("player")/7) *100)))
+					if ElvUI_EltreumUI:IsThisASafeSecret(GetUnitSpeed("player"),true) then
+						_G["GameTooltip"]:AddLine(format(_G.CR_SPEED_TOOLTIP, stringformat('%.2f', (GetUnitSpeed("player"))), ((GetUnitSpeed("player")/7) *100)))
 					end
 					_G["GameTooltip"]:Show()
 				end)
@@ -788,7 +831,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							else
 								r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 							end
-							CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+							CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 						end
 					end
 				end
@@ -827,31 +870,39 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							else
 								r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 							end
-							CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+							CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 						end
 					end
 
 					--extra stats
 					if E.db.ElvUI_EltreumUI.skins.classicarmoryeltruismstats then
 						if ElvUI_EltreumUI:IsThisASafeSecret(GetUnitSpeed("player"),true) then
-							local speed = ((_G.GetUnitSpeed("player")/7) *100)
+							local speed = ((GetUnitSpeed("player")/7) *100)
 							CharacterFrame.EltruismSpeed:SetText(mathceil(speed).."%")
-							local _, combat = _G.GetManaRegen()
-							combat = mathfloor(combat * 5.0)
-							local combatText = _G.BreakUpLargeNumbers(combat)
-							if E.myclass == 'HUNTER' or E.myclass == 'ROGUE' or E.myclass == 'DRUID' or E.myclass == 'MONK' then
-								CharacterFrame.EltruismClassResource:SetText(_G.BreakUpLargeNumbers(_G.GetPowerRegen()))
-							elseif E.myclass == 'MAGE' or E.myclass == 'SHAMAN' or E.myclass == 'WARLOCK' or E.myclass == 'PALADIN' or E.myclass == 'PRIEST' then
-								CharacterFrame.EltruismClassResource:SetText(combatText)
-							elseif E.myclass == 'DEATHKNIGHT' then
-								local _, regenRate = _G.GetRuneCooldown(1)
-								local regenRateText = (format(_G.STAT_RUNE_REGEN_FORMAT, regenRate))
-								CharacterFrame.EltruismClassResource:SetText(regenRateText)
-							end
 						end
 
-						if E.myclass == 'DRUID' or E.myclass == 'MONK' then
-							CharacterFrame.EltruismClassResource2:SetText(combatText)
+						local _, manaRegen = _G.GetManaRegen()
+						local powerRegen = _G.GetPowerRegen()
+						local manaText,powerText
+						if canaccessvalue(manaRegen) and canaccessvalue(powerRegen) then
+							manaRegen = mathfloor(manaRegen * 5.0)
+							manaText = _G.BreakUpLargeNumbers(manaRegen)
+							powerText = _G.BreakUpLargeNumbers(_G.GetPowerRegen())
+						else
+							manaText = manaRegen
+							powerText = powerRegen
+						end
+
+						if E.myclass == 'HUNTER' or E.myclass == 'ROGUE' or E.myclass == 'DRUID' or E.myclass == 'MONK' then
+							CharacterFrame.EltruismClassResource:SetText(powerText)
+						elseif E.myclass == 'MAGE' or E.myclass == 'SHAMAN' or E.myclass == 'WARLOCK' or E.myclass == 'PALADIN' or E.myclass == 'PRIEST' then
+							CharacterFrame.EltruismClassResource:SetText(manaText)
+						elseif E.myclass == 'DEATHKNIGHT' then
+							local _, regenRate = _G.GetRuneCooldown(1)
+							local regenRateText = (format(_G.STAT_RUNE_REGEN_FORMAT, regenRate))
+							CharacterFrame.EltruismClassResource:SetText(regenRateText)
+						elseif E.myclass == 'DRUID' or E.myclass == 'MONK' then
+							CharacterFrame.EltruismClassResource2:SetText(manaText)
 						end
 
 						local number = CharacterStatsPane.statsFramePool:GetNumActive()
@@ -935,7 +986,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 
 			--extra stats
 			if E.db.ElvUI_EltreumUI.skins.classicarmoryeltruismstats then
-				CharacterFrame.EltruismExtraStatsFont:SetText(L["Other"])
+				CharacterFrame.EltruismExtraStatsFont:SetText(_G.OTHER)
 				CharacterFrame.EltruismSpeedDesc:SetText(_G.STAT_MOVEMENT_SPEED)
 				if not E.db.ElvUI_EltreumUI.skins.statcolors and not E.db.ElvUI_EltreumUI.skins.characterskingradients then
 					CharacterFrame.EltruismExtraStatsFont:SetTextColor(1, 1, 1)
@@ -1109,7 +1160,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 		--add gradient text to some texts
 		if E.db.ElvUI_EltreumUI.skins.characterskingradients then
 			if E.db.ElvUI_EltreumUI.skins.classicarmory and E.db.ElvUI_EltreumUI.skins.classicarmoryeltruismstats then
-				CharacterFrame.EltruismExtraStatsFont:SetText(ElvUI_EltreumUI:GradientName(L["Other"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+				CharacterFrame.EltruismExtraStatsFont:SetText(ElvUI_EltreumUI:GradientName(_G.OTHER, E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
 			end
 			--CharacterStatsPane.ItemLevelCategory.Title:SetText("Gegenstandsstufe")
 			CharacterStatsPane.ItemLevelCategory.Title:SetText(ElvUI_EltreumUI:GradientName(L["Item Level"], E.myclass))
@@ -1172,7 +1223,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			CharacterModelScene.BackgroundBotLeft:Hide()
 			CharacterModelScene.BackgroundBotRight:Hide()
 			CharacterModelScene.BackgroundTopLeft:SetAllPoints(CharacterModelScene)
-			_G.CharacterModelFrameBackgroundOverlay:SetAllPoints(CharacterModelScene)
+			local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+			if overlay then
+				overlay:SetAllPoints(CharacterModelScene)
+			end
 
 			--add bg texture
 			CharacterFrameBackgroundTextureFader:SetAllPoints(CharacterFrame)
@@ -1213,7 +1267,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			if _G.CharacterModelScene then
 				_G.CharacterModelScene.backdrop:Hide()
 				_G.CharacterModelFrameBackgroundTopLeft:Hide()
-				_G.CharacterModelFrameBackgroundOverlay:Hide()
+				local overlay3 = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+				if overlay3 then
+					overlay3:Hide()
+				end
 			end
 
 			--hide the backdrop on reputation/currency tab
@@ -1283,7 +1340,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 								else
 									r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 								end
-								CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+								CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 							end
 						end
 					end
@@ -1301,7 +1358,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							end
 						end
 					end
-					_G.CharacterModelFrameBackgroundOverlay:Hide()
+					local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+					if overlay then
+						overlay:Hide()
+					end
 				end
 			else
 				if E.db.ElvUI_EltreumUI.skins.expandarmorybg then
@@ -1328,7 +1388,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 								else
 									r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 								end
-								CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+								CharacterFrame.ItemLevelText:SetText(E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 							end
 						end
 					end
@@ -1348,7 +1408,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					else
 						CharacterFrameBackgroundTexture:SetTexCoord(0, 0.716, 0, 1)
 					end
-					_G.CharacterModelFrameBackgroundOverlay:Hide()
+					local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+					if overlay then
+						overlay:Hide()
+					end
 					if ElvUI_EltreumUI:SLCheck('char') then
 						if _G.PaperDollFrame.SLE_Armory_BG then
 							if _G.PaperDollFrame.SLE_Armory_BG:IsVisible() then
@@ -1367,7 +1430,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 				end
 			end
 		end)
-	elseif E.Mists then
+	elseif E.Mists or E.Forever then
 
 		local function HandleCharacterPanelSize()
 			if E.db.ElvUI_EltreumUI.skins.ilvltextcolordifferenceenable and not ElvUI_EltreumUI:ReforgedCheck("avgItemLevel") then
@@ -1379,22 +1442,34 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					else
 						r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 					end
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo and E.db.ElvUI_EltreumUI.skins.classicarmory then
+
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo and E.db.ElvUI_EltreumUI.skins.classicarmory then
 						if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-							CharacterFrame.ItemLevelText:ClearAllPoints()
-							CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							itemLevelText:ClearAllPoints()
+							if E.Forever then
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+							else
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							end
 						end
-						--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+						--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 					end
 				else
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo and E.db.ElvUI_EltreumUI.skins.classicarmory then
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo and E.db.ElvUI_EltreumUI.skins.classicarmory then
 						if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-							CharacterFrame.ItemLevelText:ClearAllPoints()
-							CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							itemLevelText:ClearAllPoints()
+							if E.Forever then
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+							else
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							end
 						end
-						--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100))/100).."|r")
+						--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100)) * 0.01).."|r")
 					end
 				end
 			end
@@ -1417,6 +1492,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			--these frames are delayed, so add a delay for the visible check to work correctly
 			--have to repeat due to delayed blizz function, otherwise it would flash
 			local function HandleDelayedFrames()
+				local isExpanded = (CharacterFrame.IsRightPaneCollapsed and not CharacterFrame:IsRightPaneCollapsed()) or (not CharacterFrame.IsRightPaneCollapsed and CharacterFrame.Expanded)
 				if _G.ReputationFrame:IsVisible() then
 					if E.db.ElvUI_EltreumUI.skins.classicarmory then
 						CharacterFrame:SetHeight(455)
@@ -1442,7 +1518,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 						end
 					end
 				elseif PaperDollFrame:IsVisible() then
-					if CharacterFrame.Expanded then
+					if isExpanded then
 						if E.db.ElvUI_EltreumUI.skins.classicarmory then
 							CharacterFrame:SetHeight(455)
 							CharacterFrame:SetWidth(665)
@@ -1456,7 +1532,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							else
 								CharacterFrameBackgroundTexture:SetTexCoord(0, 0.716, 0, 1)
 							end
-							_G.CharacterModelFrameBackgroundOverlay:Hide()
+							local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+							if overlay then
+								overlay:Hide()
+							end
 						end
 					else
 						if E.db.ElvUI_EltreumUI.skins.classicarmory then
@@ -1472,7 +1551,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							else
 								CharacterFrameBackgroundTexture:SetTexCoord(0, 0.5062, 0, 1)
 							end
-							_G.CharacterModelFrameBackgroundOverlay:Hide()
+							local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+							if overlay then
+								overlay:Hide()
+							end
 						end
 					end
 					_G.CharacterFrameTitleText:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armorynamefontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -1486,17 +1568,23 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 								else
 									r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 								end
-								if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
-									CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+								local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+								if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+									itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 								end
 							else
-								if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+								local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+								if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
 									if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-										CharacterFrame.ItemLevelText:ClearAllPoints()
-										CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+										itemLevelText:ClearAllPoints()
+										if E.Forever then
+											itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+										else
+											itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+										end
 									end
-									--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-									CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100))/100).."|r")
+									--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+									itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100)) * 0.01).."|r")
 								end
 							end
 						end
@@ -1507,7 +1595,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 						end
 					end
 				elseif (_G.PetModelFrame and _G.PetModelFrame:IsVisible()) then
-					if CharacterFrame.Expanded then
+					if isExpanded then
 						if E.db.ElvUI_EltreumUI.skins.classicarmory then
 							CharacterFrame:SetHeight(455)
 							CharacterFrame:SetWidth(665)
@@ -1518,7 +1606,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							else
 								CharacterFrameBackgroundTexture:SetTexCoord(0, 0.716, 0, 1)
 							end
-							_G.CharacterModelFrameBackgroundOverlay:Hide()
+							local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+							if overlay then
+								overlay:Hide()
+							end
 						end
 					else
 						if E.db.ElvUI_EltreumUI.skins.classicarmory then
@@ -1539,7 +1630,6 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 						E:Delay(0, function()
 							local a,b,c,d,e = _G.PetModelFrame:GetPoint()
 							print(a,b:GetName(),c,d,e)
-
 
 							--_G.PetModelFrame:ClearAllPoints()
 							--_G.PetModelFrame:SetPoint('TOP', _G.CharacterFrameTitleText, 'BOTTOM', 0, -20)
@@ -1567,8 +1657,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			CharacterFrame:SetHeight(455)
 			CharacterFrame:SetWidth(665)
 			-- Move Right Side since left side is already ok
-			_G.CharacterFrameInsetRight:SetPoint('TOPLEFT', _G.CharacterFrameInset, 'TOPRIGHT', 130, 0)
-			_G.CharacterHandsSlot:SetPoint('TOPRIGHT', _G.CharacterFrameInsetRight, 'TOPLEFT', 0, -3)
+			if _G.CharacterFrameInsetRight and _G.CharacterFrameInset then
+				_G.CharacterFrameInsetRight:SetPoint('TOPLEFT', _G.CharacterFrameInset, 'TOPRIGHT', 130, 0)
+				_G.CharacterHandsSlot:SetPoint('TOPRIGHT', _G.CharacterFrameInsetRight, 'TOPLEFT', 0, -3)
+			end
 			-- Move bottom equipment slots
 			_G.CharacterMainHandSlot:SetPoint('BOTTOMLEFT', PaperDollItemsFrame, 'BOTTOMLEFT', 195, 20)
 			--strech it a bit
@@ -1585,7 +1677,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			end
 
 			--move the equipment manager to a nice position
-			if _G.PaperDollFrame.EquipmentManagerPane then
+			if not E.Forever and _G.PaperDollFrame.EquipmentManagerPane then
 				_G.PaperDollFrame.EquipmentManagerPane:ClearAllPoints()
 				_G.PaperDollFrame.EquipmentManagerPane:SetPoint("RIGHT", CharacterFrame, "RIGHT", -30, -20)
 				_G.PaperDollFrame.EquipmentManagerPane.ScrollBox:ClearAllPoints()
@@ -1599,7 +1691,7 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			end
 
 			--move the titles panel to a nice position
-			if _G.PaperDollFrame.TitleManagerPane then
+			if not E.Forever and _G.PaperDollFrame.TitleManagerPane then
 				_G.PaperDollFrame.TitleManagerPane:ClearAllPoints()
 				_G.PaperDollFrame.TitleManagerPane:SetPoint("RIGHT", CharacterFrame, "RIGHT", -40, -20)
 				_G.PaperDollFrame.TitleManagerPane.ScrollBox:ClearAllPoints()
@@ -1608,6 +1700,9 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 
 			CharacterFrame:HookScript("OnShow", function()
 				HandleCharacterPanelSize()
+				if CharacterFrame.SetRightPaneCollapsed and CharacterFrame:IsRightPaneCollapsed() then
+					CharacterFrame:SetRightPaneCollapsed(false)
+				end
 				_G.CharacterFrame:Expand() --start expanded
 				if IsAddOnLoaded("ElvUI_CataArmory") or IsAddOnLoaded("ReforgedArmory") then --reset the points since cataarmory adjusts and makes the skin look incorrect
 					if _G.CharacterFrame.BottomRightCorner then
@@ -1618,8 +1713,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 						_G.CharacterFrame.BottomLeftCorner:ClearAllPoints()
 						_G.CharacterFrame.BottomLeftCorner:SetPoint('BOTTOMLEFT', _G.CharacterFrame, 'BOTTOMLEFT', 0, 0)
 					end
-					_G.CharacterFrameTab1:ClearAllPoints()
-					_G.CharacterFrameTab1:SetPoint('TOPLEFT', _G.CharacterFrame, 'BOTTOMLEFT', 0, 0)
+					if _G.CharacterFrameTab1 then
+						_G.CharacterFrameTab1:ClearAllPoints()
+						_G.CharacterFrameTab1:SetPoint('TOPLEFT', _G.CharacterFrame, 'BOTTOMLEFT', 0, 0)
+					end
 
 					_G.CharacterFrame.BottomLeftCorner:ClearAllPoints()
 					_G.CharacterFrame.BottomLeftCorner:SetPoint('BOTTOMLEFT', _G.CharacterFrame, 'BOTTOMLEFT', 0, 0)
@@ -1631,12 +1728,41 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			_G.PaperDollFrame:HookScript("OnHide", HandleCharacterPanelSize)
 			_G.ReputationFrame:HookScript("OnShow", HandleCharacterPanelSize)
 			_G.TokenFrame:HookScript("OnShow", HandleCharacterPanelSize)
-			_G.PetModelFrame:HookScript("OnShow", HandleCharacterPanelSize)
+			if _G.PetModelFrame then
+				_G.PetModelFrame:HookScript("OnShow", HandleCharacterPanelSize)
+			end
 
 			--adjust the items
-			_G.CharacterMainHandSlot:ClearAllPoints()
-			_G.CharacterMainHandSlot:SetPoint('CENTER', _G.CharacterFrame, 'CENTER', -145, -202)
-			--_G.CharacterMainHandSlot:SetPoint('CENTER', _G.CharacterFrame, 'CENTER', -50, -202)
+			if not E.Forever then
+				_G.CharacterMainHandSlot:ClearAllPoints()
+				_G.CharacterMainHandSlot:SetPoint('CENTER', _G.CharacterFrame, 'CENTER', -145, -202)
+				--_G.CharacterMainHandSlot:SetPoint('CENTER', _G.CharacterFrame, 'CENTER', -50, -202)
+			end
+
+			--set ilvl on char panel
+			if E.Forever then
+				CharacterFrame.EltruismText2:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20) --ilvl number
+				CharacterFrame.EltruismText2:SetParent(_G.PaperDollLevelInfo)
+				CharacterFrame.EltruismText2:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
+				CharacterFrame.EltruismText2:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+
+				if _G.CharacterFrameTitleText then
+					CharacterFrame.EltruismText5:SetPoint("BOTTOM", _G.CharacterFrameTitleText, "BOTTOM", 0, -20)
+					CharacterFrame.EltruismText5:SetParent(_G.CharacterFrame)
+				else
+					CharacterFrame.EltruismText5:SetPoint("TOP", _G.CharacterModelScene, "TOP", 0, 20)
+					CharacterFrame.EltruismText5:SetParent(_G.CharacterFrame)
+				end
+				--CharacterFrame.EltruismText5:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
+				CharacterFrame.EltruismText5:SetTextColor(1, 1, 1, 1)
+				CharacterFrame.EltruismText5:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+				if E.Forever then
+					local _, specName = ElvUI_EltreumUI:CheckForeverSpec()
+					CharacterFrame.EltruismText5:SetText(specName)
+				else
+					CharacterFrame.EltruismText5:SetText(ElvUI_EltreumUI:GetPlayerSpec())
+				end
+			end
 		end
 
 		--add gradient text to stats
@@ -1659,56 +1785,95 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					end
 				end
 			end)
-
-			hooksecurefunc('PaperDollFrame_UpdateStatCategory', function(categoryFrame)
-				if not categoryFrame then return end
-				local numVisible = 0
-				local newtext
-				local categoryInfo = _G.PAPERDOLL_STATCATEGORIES[categoryFrame.Category]
-				if (categoryInfo) then
-					for _, stat in next, categoryInfo.stats do
-						local statInfo = _G.PAPERDOLL_STATINFO[stat]
-						if (statInfo) then
-							local statFrame = _G[categoryFrame:GetName().."Stat"..numVisible+1]
-							if statFrame and statFrame.Label then
-								local text = statFrame.Label:GetText()
-								statFrame.Label:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-								if statFrame.Label:GetText() ~= nil and not statFrame.Label:GetText():match("|r") then
-									if E.db.ElvUI_EltreumUI.skins.characterskingradients then
-										if statFrame.Label:GetText():match("|T") then
-											if text:match(_G.STRING_SCHOOL_ARCANE) then
-												newtext = _G.gsub(text, _G.STRING_SCHOOL_ARCANE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_ARCANE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
-												statFrame.Label:SetText(newtext)
-											elseif text:match(_G.STRING_SCHOOL_FIRE) then
-												newtext = _G.gsub(text, _G.STRING_SCHOOL_FIRE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_FIRE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
-												statFrame.Label:SetText(newtext)
-											elseif text:match(_G.STRING_SCHOOL_FROST) then
-												newtext = _G.gsub(text, _G.STRING_SCHOOL_FROST..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_FROST..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
-												statFrame.Label:SetText(newtext)
-											elseif text:match(_G.STRING_SCHOOL_NATURE) then
-												newtext = _G.gsub(text, _G.STRING_SCHOOL_NATURE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_NATURE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
-												statFrame.Label:SetText(newtext)
-											elseif text:match(_G.STRING_SCHOOL_SHADOW) then
-												newtext = _G.gsub(text, _G.STRING_SCHOOL_SHADOW..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_SHADOW..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
-												statFrame.Label:SetText(newtext)
+			if _G.PaperDollFrame_UpdateStatCategory then
+				hooksecurefunc('PaperDollFrame_UpdateStatCategory', function(categoryFrame)
+					if not categoryFrame then return end
+					local numVisible = 0
+					local newtext
+					local categoryInfo = _G.PAPERDOLL_STATCATEGORIES[categoryFrame.Category]
+					if (categoryInfo) then
+						for _, stat in next, categoryInfo.stats do
+							local statInfo = _G.PAPERDOLL_STATINFO[stat]
+							if (statInfo) then
+								local statFrame = _G[categoryFrame:GetName().."Stat"..numVisible+1]
+								if statFrame and statFrame.Label then
+									local text = statFrame.Label:GetText()
+									statFrame.Label:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+									if statFrame.Label:GetText() ~= nil and not statFrame.Label:GetText():match("|r") then
+										if E.db.ElvUI_EltreumUI.skins.characterskingradients then
+											if statFrame.Label:GetText():match("|T") then
+												if text:match(_G.STRING_SCHOOL_ARCANE) then
+													newtext = _G.gsub(text, _G.STRING_SCHOOL_ARCANE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_ARCANE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+													statFrame.Label:SetText(newtext)
+												elseif text:match(_G.STRING_SCHOOL_FIRE) then
+													newtext = _G.gsub(text, _G.STRING_SCHOOL_FIRE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_FIRE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+													statFrame.Label:SetText(newtext)
+												elseif text:match(_G.STRING_SCHOOL_FROST) then
+													newtext = _G.gsub(text, _G.STRING_SCHOOL_FROST..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_FROST..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+													statFrame.Label:SetText(newtext)
+												elseif text:match(_G.STRING_SCHOOL_NATURE) then
+													newtext = _G.gsub(text, _G.STRING_SCHOOL_NATURE..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_NATURE..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+													statFrame.Label:SetText(newtext)
+												elseif text:match(_G.STRING_SCHOOL_SHADOW) then
+													newtext = _G.gsub(text, _G.STRING_SCHOOL_SHADOW..":", ElvUI_EltreumUI:GradientName(_G.STRING_SCHOOL_SHADOW..":", E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+													statFrame.Label:SetText(newtext)
+												end
+											else
+												statFrame.Label:SetText(ElvUI_EltreumUI:GradientName(text, E.myclass))
 											end
 										else
-											statFrame.Label:SetText(ElvUI_EltreumUI:GradientName(text, E.myclass))
+											statFrame.Label:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 										end
-									else
-										statFrame.Label:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 									end
+									statFrame.Value:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 								end
-								statFrame.Value:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-							end
 
-							if statFrame and (statFrame:IsShown()) then --loop
-								numVisible = numVisible+1
+								if statFrame and (statFrame:IsShown()) then --loop
+									numVisible = numVisible+1
+								end
 							end
 						end
 					end
-				end
-			end)
+				end)
+			end
+
+			--new forever/camelot mixin for character panel
+			local CharacterStatFrameCategoryScrollBoxElementMixin = _G.CharacterStatFrameCategoryScrollBoxElementMixin
+			local CharacterStatFrameScrollBoxBaseElementMixin = _G.CharacterStatFrameScrollBoxBaseElementMixin
+			if CharacterStatFrameCategoryScrollBoxElementMixin and CharacterStatFrameCategoryScrollBoxElementMixin.Init then
+				hooksecurefunc(CharacterStatFrameCategoryScrollBoxElementMixin, 'Init', function(frame, elementData)
+					if frame.Title and elementData and elementData.name then
+						if not ElvUI_EltreumUI:SLCheck("stats") then
+							frame.Title:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 2, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						end
+						if E.db.ElvUI_EltreumUI.skins.characterskingradients then
+							frame.Title:SetText(ElvUI_EltreumUI:GradientName(elementData.name, E.myclass, nil, nil, E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+						elseif E.db.ElvUI_EltreumUI.skins.statcolors then
+							frame.Title:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+						end
+					end
+				end)
+			end
+			if CharacterStatFrameScrollBoxBaseElementMixin and CharacterStatFrameScrollBoxBaseElementMixin.Init then
+				hooksecurefunc(CharacterStatFrameScrollBoxBaseElementMixin, 'Init', function(frame)--, elementData)
+					if frame.Label then
+						if not ElvUI_EltreumUI:SLCheck("stats") then
+							frame.Label:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						end
+						local text = frame.Label:GetText()
+						if text and not text:match("|r") then
+							if E.db.ElvUI_EltreumUI.skins.characterskingradients then
+								frame.Label:SetText(ElvUI_EltreumUI:GradientName(text, E.myclass, nil, nil, E.db.ElvUI_EltreumUI.skins.characterskingradientscustom))
+							elseif E.db.ElvUI_EltreumUI.skins.statcolors then
+								frame.Label:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+							end
+						end
+					end
+					if frame.Value and not ElvUI_EltreumUI:SLCheck("stats") then
+						frame.Value:SetFont(E.LSM:Fetch('font', E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+					end
+				end)
+			end
 		end
 
 		-- add and expand art
@@ -1719,7 +1884,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			CharacterModelScene.BackgroundBotLeft:Hide()
 			CharacterModelScene.BackgroundBotRight:Hide()
 			CharacterModelScene.BackgroundTopLeft:SetAllPoints(CharacterModelScene)
-			_G.CharacterModelFrameBackgroundOverlay:SetAllPoints(CharacterModelScene)
+			local overlay = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+			if overlay then
+				overlay:SetAllPoints(CharacterModelScene)
+			end
 
 			--add bg texture
 			CharacterFrameBackgroundTextureFader:SetAllPoints(CharacterFrame)
@@ -1760,7 +1928,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			if _G.CharacterModelScene then
 				_G.CharacterModelScene.backdrop:Hide()
 				_G.CharacterModelFrameBackgroundTopLeft:Hide()
-				_G.CharacterModelFrameBackgroundOverlay:Hide()
+				local overlay2 = _G.CharacterModelFrameBackgroundOverlay or (CharacterModelScene and CharacterModelScene.BackgroundOverlay)
+				if overlay2 then
+					overlay2:Hide()
+				end
 			end
 		end
 
@@ -1780,6 +1951,14 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			_G.CharacterModelFrameBackgroundTopRight:SetHeight(309)
 			_G.CharacterModelFrameBackgroundBotRight:SetPoint("BOTTOMRIGHT", _G.CharacterModelScene, "BOTTOMRIGHT",0,-54)
 			_G.CharacterModelFrameBackgroundBotRight:SetWidth(60)
+
+			--set ilvl on char panel
+			if E.Forever then
+				CharacterFrame.EltruismText2:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20) --ilvl number
+				CharacterFrame.EltruismText2:SetParent(_G.PaperDollLevelInfo)
+				CharacterFrame.EltruismText2:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
+				CharacterFrame.EltruismText2:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			end
 		end
 
 		--update ilvl
@@ -1793,17 +1972,23 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					else
 						r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 					end
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+						itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 					end
 				else
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
 						if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-							CharacterFrame.ItemLevelText:ClearAllPoints()
-							CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							itemLevelText:ClearAllPoints()
+							if E.Forever then
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+							else
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							end
 						end
-						--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100))/100).."|r")
+						--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100)) * 0.01).."|r")
 					end
 				end
 			end
@@ -1826,6 +2011,9 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 
 		hooksecurefunc(_G.CharacterFrame, "Collapse", HandleCharacterPanelSize)
 		hooksecurefunc(_G.CharacterFrame, "Expand", HandleCharacterPanelSize)
+		if _G.CharacterFrame.SetRightPaneCollapsed then
+			hooksecurefunc(_G.CharacterFrame, "SetRightPaneCollapsed", HandleCharacterPanelSize)
+		end
 
 		local function ItemLevelString()
 			if E.db.ElvUI_EltreumUI.skins.ilvltextcolordifferenceenable and E.db.ElvUI_EltreumUI.skins.classicarmory and not ElvUI_EltreumUI:ReforgedCheck("avgItemLevel") then
@@ -1837,22 +2025,35 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					else
 						r, g, b = E:ColorGradient((equippedilvl / bagilvl), P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.badB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.mediumB, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodR, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodG, P.ElvUI_EltreumUI.skins.ilvltextcolordifference.goodB)
 					end
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
 						if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-							CharacterFrame.ItemLevelText:ClearAllPoints()
-							CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							itemLevelText:ClearAllPoints()
+							if E.Forever then
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+							else
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							end
 						end
-						--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100))/100).."|r ("..((mathfloor(bagilvl*100))/100)..")|r")
+						--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						itemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(r, g, b)..((mathfloor(equippedilvl*100)) * 0.01).."|r ("..((mathfloor(bagilvl*100)) * 0.01)..")|r")
 					end
 				else
-					if CharacterFrame.ItemLevelText and E.db.general.itemLevel.displayCharacterInfo then
+					local itemLevelText = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+					if itemLevelText and E.db.general.itemLevel.displayCharacterInfo then
 						if E.db.ElvUI_EltreumUI.skins.ilvltextchangepoint then
-							CharacterFrame.ItemLevelText:ClearAllPoints()
-							CharacterFrame.ItemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							itemLevelText:ClearAllPoints()
+							if E.Forever then
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -20)
+							else
+								itemLevelText:SetPoint("BOTTOM", _G.CharacterLevelText, "BOTTOM", 0, -10)
+							end
 						end
-						--CharacterFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-						CharacterFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100))/100).."|r")
+						--itemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.font), 12, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+						local itemLevelText2 = CharacterFrame.EltruismText2 or CharacterFrame.ItemLevelText
+						if itemLevelText2 then
+							itemLevelText2:SetText("|cffFFCE00"..L["Item Level"]..":|r "..E:RGBToHex(1, 1, 1)..((mathfloor(equippedilvl*100)) * 0.01).."|r")
+						end
 					end
 				end
 			end
@@ -1878,9 +2079,9 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 
 		--gradient colors to categories other
 		if E.db.ElvUI_EltreumUI.skins.characterskingradients then
-			CharacterFrame.Text:SetText(ElvUI_EltreumUI:GradientName(L["Item Level"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---ilvl
-			CharacterFrame.Text3:SetText(ElvUI_EltreumUI:GradientName(L["Attributes"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---attributes
-			CharacterFrame.Text4:SetText(ElvUI_EltreumUI:GradientName(L["Specialization"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---specialization
+			CharacterFrame.EltruismText:SetText(ElvUI_EltreumUI:GradientName(L["Item Level"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---ilvl
+			CharacterFrame.EltruismText3:SetText(ElvUI_EltreumUI:GradientName(_G.STAT_CATEGORY_ATTRIBUTES, E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---attributes
+			CharacterFrame.EltruismText4:SetText(ElvUI_EltreumUI:GradientName(_G.SPECIALIZATION, E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---specialization
 		end
 
 		--color stats with a class gradient
@@ -2132,17 +2333,17 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			end
 
 			if not E.db.ElvUI_EltreumUI.skins.characterskingradients then
-				CharacterFrame.Text:SetText(L["Item Level"]) ---ilvl
-				CharacterFrame.Text:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
-				CharacterFrame.Text3:SetText(L["Attributes"]) ---attributes
-				CharacterFrame.Text3:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
-				CharacterFrame.Text4:SetText(L["Specialization"]) ---specialization
-				CharacterFrame.Text4:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText:SetText(L["Item Level"]) ---ilvl
+				CharacterFrame.EltruismText:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText3:SetText(_G.STAT_CATEGORY_ATTRIBUTES) ---attributes
+				CharacterFrame.EltruismText3:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText4:SetText(_G.SPECIALIZATION) ---specialization
+				CharacterFrame.EltruismText4:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 			end
 
 			--set ilvl on char panel
 			hooksecurefunc("ToggleCharacter", function()
-				CharacterFrame.Text2:SetText((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("player")*100))/100)
+				CharacterFrame.EltruismText2:SetText((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("player")*100)) * 0.01)
 			end)
 
 			if _G.PlayerTitleDropdown then
@@ -2173,12 +2374,12 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			CharacterModelFrame:SetPosition(0, 0, 0) -- zoom, x, y
 			CharacterModelFrame:SetPosition(E.db.ElvUI_EltreumUI.skins.charactermodelcam.zoomclassic, E.db.ElvUI_EltreumUI.skins.charactermodelcam.xclassic, E.db.ElvUI_EltreumUI.skins.charactermodelcam.yclassic)
 
-			CharacterFrame.Text6:SetSize(418, 72)
-			CharacterFrame.Text6:SetPoint("TOP", CharacterFrame, "TOP", 0, -50)
-			CharacterFrame.Text6:SetParent(CharacterFrame)
-			CharacterFrame.Text6:SetTextColor(1, 0, 0, 1)
-			CharacterFrame.Text6:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-			CharacterFrame.Text6:SetText("|cffFF0000".._G.ERR_NOT_IN_COMBAT.."|r")
+			CharacterFrame.EltruismText6:SetSize(418, 72)
+			CharacterFrame.EltruismText6:SetPoint("TOP", CharacterFrame, "TOP", 0, -50)
+			CharacterFrame.EltruismText6:SetParent(CharacterFrame)
+			CharacterFrame.EltruismText6:SetTextColor(1, 0, 0, 1)
+			CharacterFrame.EltruismText6:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			CharacterFrame.EltruismText6:SetText("|cffFF0000".._G.ERR_NOT_IN_COMBAT.."|r")
 
 			--fix frame size depending on tab
 			local function ResizeCharacterFrame()
@@ -2186,8 +2387,8 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
 					local width = CharacterFrame:GetWidth()
 					if mathfloor(width) ~= 700 then
-						CharacterFrame.Text6:Show()
-						CharacterFrame.Text4:Hide()
+						CharacterFrame.EltruismText6:Show()
+						CharacterFrame.EltruismText4:Hide()
 						CharacterFrame.StatusLine4:Hide()
 						CharacterFrame.StatusLine2:Hide()
 
@@ -2218,8 +2419,8 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 							CharacterFrameBackgroundTexture:SetTexCoord(0, 0.39, 0, 1)
 						end
 					else
-						CharacterFrame.Text6:Hide()
-						CharacterFrame.Text4:Show()
+						CharacterFrame.EltruismText6:Hide()
+						CharacterFrame.EltruismText4:Show()
 						CharacterFrame.StatusLine4:Show()
 						CharacterFrame.StatusLine2:Show()
 						if E.db.ElvUI_EltreumUI.skins.armorybgtype == "CLASS" then
@@ -2232,10 +2433,10 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 						ClassCrestFrame:SetPoint("CENTER", CharacterModelFrame, 0 , 50)
 					end
 				else]]
-					CharacterFrame.Text4:Show()
+					CharacterFrame.EltruismText4:Show()
 					CharacterFrame.StatusLine4:Show()
 					CharacterFrame.StatusLine2:Show()
-					CharacterFrame.Text6:Hide()
+					CharacterFrame.EltruismText6:Hide()
 					--show quality texture
 					for _, InvSlotName in pairs(InvSlotIdTable) do
 						if _G["EltruismItemQuality"..InvSlotName] then
@@ -2325,74 +2526,79 @@ function ElvUI_EltreumUI:ExpandedCharacterStats()
 			CharacterLevelText:SetParent(CharacterModelFrame)
 
 			--start of the stats
-			CharacterFrame.Text4:SetSize(418, 72)
-			CharacterFrame.Text4:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", 50, 0) ---anchored
-			CharacterFrame.Text4:SetParent(_G["PaperDollItemsFrame"]) --Main Parent1
-			CharacterFrame.Text4:SetTextColor(1, 1, 1)
-			CharacterFrame.Text4:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			CharacterFrame.EltruismText4:SetSize(418, 72)
+			CharacterFrame.EltruismText4:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", 50, 0) ---anchored
+			CharacterFrame.EltruismText4:SetParent(_G["PaperDollItemsFrame"]) --Main Parent1
+			CharacterFrame.EltruismText4:SetTextColor(1, 1, 1)
+			CharacterFrame.EltruismText4:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			if E.db.ElvUI_EltreumUI.skins.characterskingradients then
-				CharacterFrame.Text4:SetText(ElvUI_EltreumUI:GradientName(L["Specialization"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---specialization
+				CharacterFrame.EltruismText4:SetText(ElvUI_EltreumUI:GradientName(_G.SPECIALIZATION, E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---specialization
 			else
-				CharacterFrame.Text4:SetText(L["Specialization"])
-				CharacterFrame.Text4:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText4:SetText(_G.SPECIALIZATION)
+				CharacterFrame.EltruismText4:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 			end
 			CharacterFrame.StatusLine4:SetSize(170, 3)
-			CharacterFrame.StatusLine4:SetPoint("CENTER", CharacterFrame.Text4, "CENTER", 0, -15)
+			CharacterFrame.StatusLine4:SetPoint("CENTER", CharacterFrame.EltruismText4, "CENTER", 0, -15)
 			CharacterFrame.StatusLine4:SetParent(_G["PaperDollItemsFrame"]) --Main Parent2
 			CharacterFrame.StatusLine4:SetStatusBarTexture(E.Media.Textures.Highlight)
 			CharacterFrame.StatusLine4:SetStatusBarColor(classcolor.r, classcolor.g, classcolor.b, 1)
 
-			CharacterFrame.Text5:SetSize(418, 72)
-			CharacterFrame.Text5:SetPoint("BOTTOM", CharacterFrame.StatusLine4, "BOTTOM", 0, -50)
-			CharacterFrame.Text5:SetParent(CharacterFrame.StatusLine4)
-			--CharacterFrame.Text5:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
-			CharacterFrame.Text5:SetTextColor(1, 1, 1, 1)
-			CharacterFrame.Text5:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-			CharacterFrame.Text5:SetText(ElvUI_EltreumUI:GetPlayerSpec())
-
-			CharacterFrame.Text:SetSize(418, 72)
-			CharacterFrame.Text:SetPoint("BOTTOM", CharacterFrame.Text5, "BOTTOM", 0, -25)
-			CharacterFrame.Text:SetParent(CharacterFrame.StatusLine4)
-			CharacterFrame.Text:SetTextColor(1, 1, 1)
-			CharacterFrame.Text:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
-			if E.db.ElvUI_EltreumUI.skins.characterskingradients then
-				CharacterFrame.Text:SetText(ElvUI_EltreumUI:GradientName(L["Item Level"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---ilvl
+			CharacterFrame.EltruismText5:SetSize(418, 72)
+			CharacterFrame.EltruismText5:SetPoint("BOTTOM", CharacterFrame.StatusLine4, "BOTTOM", 0, -50)
+			CharacterFrame.EltruismText5:SetParent(CharacterFrame.StatusLine4)
+			--CharacterFrame.EltruismText5:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
+			CharacterFrame.EltruismText5:SetTextColor(1, 1, 1, 1)
+			CharacterFrame.EltruismText5:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			if E.Forever then
+				local _, specName = ElvUI_EltreumUI:CheckForeverSpec()
+				CharacterFrame.EltruismText5:SetText(specName)
 			else
-				CharacterFrame.Text:SetText(L["Item Level"])
-				CharacterFrame.Text:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText5:SetText(ElvUI_EltreumUI:GetPlayerSpec())
+			end
+
+			CharacterFrame.EltruismText:SetSize(418, 72)
+			CharacterFrame.EltruismText:SetPoint("BOTTOM", CharacterFrame.EltruismText5, "BOTTOM", 0, -25)
+			CharacterFrame.EltruismText:SetParent(CharacterFrame.StatusLine4)
+			CharacterFrame.EltruismText:SetTextColor(1, 1, 1)
+			CharacterFrame.EltruismText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			if E.db.ElvUI_EltreumUI.skins.characterskingradients then
+				CharacterFrame.EltruismText:SetText(ElvUI_EltreumUI:GradientName(L["Item Level"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---ilvl
+			else
+				CharacterFrame.EltruismText:SetText(L["Item Level"])
+				CharacterFrame.EltruismText:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 			end
 			CharacterFrame.StatusLine:SetSize(170, 3)
-			CharacterFrame.StatusLine:SetPoint("CENTER", CharacterFrame.Text, "CENTER", 0, -15)
+			CharacterFrame.StatusLine:SetPoint("CENTER", CharacterFrame.EltruismText, "CENTER", 0, -15)
 			CharacterFrame.StatusLine:SetParent(CharacterFrame.StatusLine4)
 			CharacterFrame.StatusLine:SetStatusBarTexture(E.Media.Textures.Highlight)
 			CharacterFrame.StatusLine:SetStatusBarColor(classcolor.r, classcolor.g, classcolor.b, 1)
 
-			CharacterFrame.Text2:SetSize(418, 72)
-			CharacterFrame.Text2:SetPoint("BOTTOM", CharacterFrame.Text, "BOTTOM", 0, -35) --ilvl number
-			CharacterFrame.Text2:SetParent(CharacterFrame.StatusLine4)
-			CharacterFrame.Text2:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
-			CharacterFrame.Text2:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			CharacterFrame.EltruismText2:SetSize(418, 72)
+			CharacterFrame.EltruismText2:SetPoint("BOTTOM", CharacterFrame.EltruismText, "BOTTOM", 0, -35) --ilvl number
+			CharacterFrame.EltruismText2:SetParent(CharacterFrame.StatusLine4)
+			CharacterFrame.EltruismText2:SetTextColor(classcolor.r, classcolor.g, classcolor.b, 1)
+			CharacterFrame.EltruismText2:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			CharacterFrame.StatusLine2:SetFrameStrata("MEDIUM")
 			CharacterFrame.StatusLine2:SetFrameLevel(1)
 			CharacterFrame.StatusLine2:SetSize(170, 25)
-			CharacterFrame.StatusLine2:SetPoint("CENTER", CharacterFrame.Text2, "CENTER", 0, 0)
+			CharacterFrame.StatusLine2:SetPoint("CENTER", CharacterFrame.EltruismText2, "CENTER", 0, 0)
 			CharacterFrame.StatusLine2:SetParent(_G["PaperDollItemsFrame"]) --Main Parent3
 			CharacterFrame.StatusLine2:SetStatusBarTexture(E.Media.Textures.Highlight)
 			CharacterFrame.StatusLine2:SetStatusBarColor(1, 1, 1, 0.5)
 
-			CharacterFrame.Text3:SetSize(418, 72)
-			CharacterFrame.Text3:SetPoint("TOP", CharacterFrame.Text2, "TOP", 0, -27)
-			CharacterFrame.Text3:SetParent(CharacterFrame.StatusLine4)
-			CharacterFrame.Text3:SetTextColor(1, 1, 1)
-			CharacterFrame.Text3:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			CharacterFrame.EltruismText3:SetSize(418, 72)
+			CharacterFrame.EltruismText3:SetPoint("TOP", CharacterFrame.EltruismText2, "TOP", 0, -27)
+			CharacterFrame.EltruismText3:SetParent(CharacterFrame.StatusLine4)
+			CharacterFrame.EltruismText3:SetTextColor(1, 1, 1)
+			CharacterFrame.EltruismText3:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize + 6, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			if E.db.ElvUI_EltreumUI.skins.characterskingradients then
-				CharacterFrame.Text3:SetText(ElvUI_EltreumUI:GradientName(L["Attributes"], E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---attributes
+				CharacterFrame.EltruismText3:SetText(ElvUI_EltreumUI:GradientName(_G.STAT_CATEGORY_ATTRIBUTES, E.myclass,nil,nil,E.db.ElvUI_EltreumUI.skins.characterskingradientscustom)) ---attributes
 			else
-				CharacterFrame.Text3:SetText(L["Attributes"])
-				CharacterFrame.Text3:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
+				CharacterFrame.EltruismText3:SetText(_G.STAT_CATEGORY_ATTRIBUTES)
+				CharacterFrame.EltruismText3:SetTextColor(classcolor.r, classcolor.g, classcolor.b)
 			end
 			CharacterFrame.StatusLine3:SetSize(170, 3)
-			CharacterFrame.StatusLine3:SetPoint("CENTER", CharacterFrame.Text3, "CENTER", 0, -15)
+			CharacterFrame.StatusLine3:SetPoint("CENTER", CharacterFrame.EltruismText3, "CENTER", 0, -15)
 			CharacterFrame.StatusLine3:SetParent(CharacterFrame.StatusLine4)
 			CharacterFrame.StatusLine3:SetStatusBarTexture(E.Media.Textures.Highlight)
 			CharacterFrame.StatusLine3:SetStatusBarColor(classcolor.r, classcolor.g, classcolor.b, 1)
@@ -2747,7 +2953,7 @@ function ElvUI_EltreumUI:PlayerItemQuality(unit)
 					qualityAnchor.Frame.Quality = qualityAnchor.Frame:CreateTexture("EltruismItemQualityTexture"..InvSlotName, "OVERLAY")
 				end
 
-				if E.Retail or E.Mists then
+				if E.Modern or E.Mists then
 					qualityAnchor.Frame:SetFrameLevel(2) --retail works fine
 					if E.db.ElvUI_EltreumUI.skins.classicarmory then
 						qualityAnchor.Frame:SetSize(200, _G["Character"..InvSlotName]:GetHeight() + 2)
@@ -2787,7 +2993,7 @@ function ElvUI_EltreumUI:PlayerItemQuality(unit)
 						end
 						qualityAnchor.Frame.Quality:SetVertexColor(r, g, b)
 						qualityAnchor.Frame.Quality:SetAlpha(1)
-						if E.Retail then
+						if E.Modern then
 							local borderfix = _G["Character"..InvSlotName]
 							if borderfix.IconBorder then
 								--borderfix.IconBorder:SetVertexColor(r, g, b)
@@ -2815,7 +3021,7 @@ function ElvUI_EltreumUI:PlayerItemQuality(unit)
 							end
 						end
 
-						if not E.Retail then
+						if not E.Modern then
 							--coloring ilvl based on the items they have
 							local qualitytable = {
 								[0] = 0,
@@ -2842,9 +3048,9 @@ function ElvUI_EltreumUI:PlayerItemQuality(unit)
 									maxquality, numberquality = k, v
 								end
 							end
-							if _G.CharacterFrame.Text2 and _G.CharacterFrame.Text2:GetText() ~= nil then
+							if _G.CharacterFrame.EltruismText2 and _G.CharacterFrame.EltruismText2:GetText() ~= nil then
 								local rc,gc,bc = GetItemQualityColor(maxquality)
-								_G.CharacterFrame.Text2:SetTextColor(rc,gc,bc)
+								_G.CharacterFrame.EltruismText2:SetTextColor(rc,gc,bc)
 							end
 						end
 					end
@@ -2923,7 +3129,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 			if englishClass or englishRace then
 				if _G.InspectFrame then
 
-					if not E.Retail and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
+					if not E.Modern and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
 						_G.InspectFrame:HookScript("OnHide", function()
 							EltruismInspectBg:UnregisterEvent("UNIT_MODEL_CHANGED")
 						end)
@@ -2932,11 +3138,10 @@ function ElvUI_EltreumUI:InspectBg(unit)
 						end)
 					end
 
-
 					local classcolorinspect = E:ClassColor(englishClass, true)
 
 					--inspect frame expand skin
-					if not E.Retail then
+					if not E.Modern then
 						E:Delay(0, function()
 							if InCombatLockdown() then
 								_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
@@ -3057,7 +3262,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 							_G.InspectFrame.ItemLevelText:SetTextColor(classcolorinspect.r, classcolorinspect.g, classcolorinspect.b)
 							_G.InspectFrame.ItemLevelText:SetParent(_G["InspectModelFrame"])
 							--_G.InspectFrame.ItemLevelText:SetText(ElvUI_EltreumUI:GradientName(_G.InspectFrame.ItemLevelText:GetText(), englishClass))
-							--_G.InspectFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100))/100)
+							--_G.InspectFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100)) * 0.01)
 							_G.InspectFrame.ItemLevelText:SetFont(E.LSM:Fetch('font', E.db.general.itemLevel.totalLevelFont), 12, E.db.general.itemLevel.totalLevelFontOutline)
 						end
 
@@ -3070,7 +3275,8 @@ function ElvUI_EltreumUI:InspectBg(unit)
 										if ilvl then
 											_G.InspectFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..ilvl)
 										else
-											_G.InspectFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r ".."?")
+											ilvl = (mathfloor(ElvUI_EltreumUI:GetUnitItemLevel(_G.InspectFrame.unit)*100)) * 0.01
+											_G.InspectFrame.ItemLevelText:SetText("|cffFFCE00"..L["Item Level"]..":|r "..ilvl)
 										end
 									end
 								end
@@ -3102,6 +3308,9 @@ function ElvUI_EltreumUI:InspectBg(unit)
 						if _G.InspectPaperDollItemsFrame.InspectTalents then
 							_G.InspectPaperDollItemsFrame.InspectTalents:ClearAllPoints()
 							_G.InspectPaperDollItemsFrame.InspectTalents:SetPoint("RIGHT", _G.InspectFrame, "BOTTOMRIGHT", -5, 15)
+						elseif _G.InspectPaperDollFrame and _G.InspectPaperDollFrame.InspectTalents then
+							_G.InspectPaperDollFrame.InspectTalents:ClearAllPoints()
+							_G.InspectPaperDollFrame.InspectTalents:SetPoint("RIGHT", _G.InspectFrame, "BOTTOMRIGHT", -5, 15)
 						end
 					end
 
@@ -3110,7 +3319,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 					--add class icon + colored name
 					if E.db.ElvUI_EltreumUI.skins.classiconsoncharacterpanel then
 						E:Delay(0, function()
-							if not E.Retail then
+							if not E.Modern then
 								if _G.InspectNameText then
 									_G.InspectNameText:ClearAllPoints()
 									_G.InspectNameText:SetPoint("TOP",_G.InspectFrame,"TOP",0,-15)
@@ -3173,14 +3382,14 @@ function ElvUI_EltreumUI:InspectBg(unit)
 						_G.InspectLevelText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 						_G.InspectFrame.Ilvl:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.skins.armoryfontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 						if _G.InspectFrame and _G.InspectFrame.unit then
-							E:Delay(0.1, function() _G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel(_G.InspectFrame.unit)*100))/100) end)
+							E:Delay(0.1, function() _G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel(_G.InspectFrame.unit)*100)) * 0.01) end)
 						else
-							E:Delay(0.1, function() _G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100))/100) end)
+							E:Delay(0.1, function() _G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r "..(mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100)) * 0.01) end)
 						end
 					end
 
 					--calculate inspect ilvl
-					if not E.Retail and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
+					if not E.Modern and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
 						E:Delay(0, function()
 							InspectIlvl()
 						end)
@@ -3226,7 +3435,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 					end
 
 					EltruismInspectBgTexture:SetAlpha(E.db.ElvUI_EltreumUI.skins.expandarmorybgalpha)
-					if not E.Retail then
+					if not E.Modern then
 						--EltruismInspectBgTexture:SetAllPoints(_G.InspectFrame.backdrop) --check on tbc, maybe wrath is also like this now
 						EltruismInspectBgTexture:SetAllPoints(_G.InspectFrame)
 						EltruismInspectBgTexture:SetParent(_G.InspectFrame)
@@ -3273,7 +3482,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 						qualityAnchorInspect.Frame.Quality = qualityAnchorInspect.Frame:CreateTexture("EltruismInspectItemQualityTexture"..InvSlotName, "OVERLAY")
 					end
 
-					if E.Retail then
+					if E.Modern then
 						qualityAnchorInspect.Frame:SetFrameLevel(2)
 						qualityAnchorInspect.Frame:SetSize(140, _G["Inspect"..InvSlotName]:GetHeight() + 2)
 					else
@@ -3311,7 +3520,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 							end
 							qualityAnchorInspect.Frame.Quality:SetVertexColor(r, g, b)
 							qualityAnchorInspect.Frame.Quality:SetAlpha(1)
-							if E.Retail then
+							if E.Modern then
 								local borderfix = _G["Inspect"..InvSlotName]
 								if borderfix.IconBorder then
 									borderfix.IconBorder:SetVertexColor(r, g, b)
@@ -3330,7 +3539,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 								end
 							end
 
-							if not E.Retail and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
+							if not E.Modern and E.db.ElvUI_EltreumUI.skins.ilvlsinspect then
 								--coloring ilvl based on the items they have
 								local qualitytable = {
 									[0] = 0,
@@ -3364,9 +3573,9 @@ function ElvUI_EltreumUI:InspectBg(unit)
 									if _G.InspectFrame.Ilvl:GetText() ~= nil and not _G.InspectFrame.Ilvl:GetText():match("|r") then
 										local _, _, _, hex = GetItemQualityColor(maxquality)
 										if _G.InspectFrame and _G.InspectFrame.unit then
-											_G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r ".."|c"..hex..((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel(_G.InspectFrame.unit)*100))/100).."|r")
+											_G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r ".."|c"..hex..((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel(_G.InspectFrame.unit)*100)) * 0.01).."|r")
 										else
-											_G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r ".."|c"..hex..((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100))/100).."|r")
+											_G.InspectFrame.Ilvl:SetText("|cffFFCE00"..L["Item Level"]..":|r ".."|c"..hex..((mathfloor(ElvUI_EltreumUI:GetUnitItemLevel("target")*100)) * 0.01).."|r")
 										end
 									end
 								end
@@ -3386,7 +3595,7 @@ function ElvUI_EltreumUI:InspectBg(unit)
 						--flip the texture since its on the other side
 						qualityAnchorInspect.Frame.Quality:SetTexCoord(1, 0, 0, 1)
 					elseif InvSlotId == 17 then --rotate for the off hand slot that is in the middle in classic/cata
-						if not E.Retail then
+						if not E.Modern then
 							qualityAnchorInspect.Frame:SetSize(120, _G["Inspect"..InvSlotName]:GetHeight() + 2)
 							qualityAnchorInspect.Frame.Quality:SetRotation(1.57079633)
 							qualityAnchorInspect.Frame:SetPoint("BOTTOM", _G["Inspect"..InvSlotName], "BOTTOM", 0, 37)

@@ -4,7 +4,6 @@ local S = E:GetModule('Skins')
 local valuecolors = E.myClassColor
 local _G = _G
 local CreateFrame = _G.CreateFrame
-local IsInInstance = _G.IsInInstance
 local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
 local Minimap = _G.Minimap
 local GetPlayerFacing = _G.GetPlayerFacing
@@ -15,9 +14,10 @@ local InCombatLockdown = _G.InCombatLockdown
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local pairs = _G.pairs
 local hooksecurefunc = _G.hooksecurefunc
+local MAP_PIN = _G.MAP_PIN
 
 --Conversion of Time to Arrive weakaura (new version)
-if E.Retail then
+if E.Modern then
 	local C_Map = _G.C_Map
 	local C_SuperTrack = _G.C_SuperTrack
 	local GetUnitSpeed = _G.GetUnitSpeed
@@ -45,6 +45,12 @@ if E.Retail then
 	EltruismTimeToArrive.TimeText:SetPoint("TOP", "SuperTrackedFrame", "BOTTOM", 0, 7)
 	EltruismTimeToArrive.TimeText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 	EltruismTimeToArrive.TimeText:SetParent(_G["SuperTrackedFrame"])
+	EltruismTimeToArrive.WaypointText = EltruismTimeToArrive:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+	EltruismTimeToArrive.WaypointText:SetJustifyV("TOP")
+	EltruismTimeToArrive.WaypointText:SetSize(0, 26)
+	EltruismTimeToArrive.WaypointText:SetPoint("TOP", "SuperTrackedFrame", "BOTTOM", 0, -9)
+	EltruismTimeToArrive.WaypointText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+	EltruismTimeToArrive.WaypointText:SetParent(_G["SuperTrackedFrame"])
 	EltruismTimeToArrive:SetParent(_G["SuperTrackedFrame"])
 	SuperTrackedFrame.DistanceText:SetTextColor(1,1,1)
 	SuperTrackedFrame.DistanceText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -52,6 +58,111 @@ if E.Retail then
 	--set the throttle
 	local ONUPDATE_INTERVAL = 1
 	local TimeSinceLastUpdate = 0
+
+	function ElvUI_EltreumUI:SpeedCheckDelayed()
+		local previousdistance = C_Navigation.GetDistance()
+		local speed = mathabs(EltruismTimeToArrive.SavedDistance - previousdistance)
+		local seconds = 0
+		local minutes = 0
+		if speed and speed > 0 then
+			local eta= mathabs(EltruismTimeToArrive.SavedDistance / speed)
+			if eta > 600 then
+				minutes = stringformat("%02.f", mathfloor(eta/60 ))
+				seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+			elseif eta < 600 and eta > 10 then
+				minutes = stringformat("%01.f", mathfloor(eta/60))
+				seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+			elseif eta < 10 then
+				minutes = stringformat("%01.f", mathfloor(eta/60))
+				seconds = stringformat("%1.d", mathfloor(eta - minutes *60))
+			else
+				minutes = stringformat("%02.f", mathfloor(eta/60))
+				seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+			end
+		end
+		--set the time to arrive to the frame's text
+		if minutes == 0 and seconds == 0 then
+			EltruismTimeToArrive.TimeText:SetText("***")
+		elseif minutes < "01" and seconds > "0" then
+			EltruismTimeToArrive.TimeText:SetText(seconds.."s")
+		else
+			EltruismTimeToArrive.TimeText:SetText(minutes.."m"..":"..seconds.."s")
+		end
+	end
+
+	--use throttled onupdate to udpate the text (once per second)
+	function ElvUI_EltreumUI:TimeToArriveOnUpdate(elapsed)
+		TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
+		if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
+			TimeSinceLastUpdate = 0
+
+			local notsafe
+			local speed = 0
+
+			--player speed can be secret, so protect in case there is a waypoint when it is
+			if ElvUI_EltreumUI:IsThisASafeSecret(GetUnitSpeed("player"),true) then
+				notsafe = false
+				speed = GetUnitSpeed("player") or GetUnitSpeed("vehicle")
+				if not speed or speed == 0 then
+					local _,_,flyspeed = GetUnitSpeed('player')
+					speed = flyspeed
+				end
+			else
+				notsafe = true
+			end
+
+			--add objective text
+			--name, description = C_SuperTrack.GetSuperTrackedItemName()
+			--questID = C_SuperTrack.GetSuperTrackedQuestID()
+			if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.waypointname then
+				local name = C_SuperTrack.GetSuperTrackedItemName()
+				if name == MAP_PIN then
+					EltruismTimeToArrive.WaypointText:SetText("")
+				elseif (name ~= EltruismTimeToArrive.WaypointText:GetText()) then
+					EltruismTimeToArrive.WaypointText:SetText(name)
+				end
+			end
+
+			--calculate time to arrive
+			local distance = C_Navigation.GetDistance()
+			EltruismTimeToArrive.SavedDistance = distance
+			local seconds = 0
+			local minutes = 0
+			if IsPlayerMoving() or _G.UnitOnTaxi("player") then
+				if (not speed or speed == 0) or notsafe then --might be dragonflying or secret, calculate based on delta distance
+					E:Delay(1, ElvUI_EltreumUI.SpeedCheckDelayed)
+				else
+					if speed and speed > 0 then
+						local eta= mathabs(distance / speed)
+						if eta > 600 then
+							minutes = stringformat("%02.f", mathfloor(eta/60 ))
+							seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+						elseif eta < 600 and eta > 10 then
+							minutes = stringformat("%01.f", mathfloor(eta/60))
+							seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+						elseif eta < 10 then
+							minutes = stringformat("%01.f", mathfloor(eta/60))
+							seconds = stringformat("%1.d", mathfloor(eta - minutes *60))
+						else
+							minutes = stringformat("%02.f", mathfloor(eta/60))
+							seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
+						end
+					end
+					--set the time to arrive to the frame's text
+					if minutes == 0 and seconds == 0 then
+						EltruismTimeToArrive.TimeText:SetText("***")
+					elseif minutes < "01" and seconds > "0" then
+						EltruismTimeToArrive.TimeText:SetText(seconds.."s")
+					else
+						EltruismTimeToArrive.TimeText:SetText(minutes.."m"..":"..seconds.."s")
+					end
+				end
+			else --not moving at all
+				EltruismTimeToArrive.TimeText:SetText("***")
+			end
+		end
+	end
+
 	function ElvUI_EltreumUI:WaypointTimeToArrive()
 		if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.enable then
 			if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.autopin then
@@ -63,7 +174,7 @@ if E.Retail then
 				EltruismAutopin:SetScript("OnEvent", function()
 					EltruismAutopin:UnregisterEvent("PLAYER_STARTED_MOVING")
 					if InCombatLockdown() then return end --check for combat due to taint
-					local _, instanceType = IsInInstance()
+					local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 					--print(instanceType,event,"autopin")
 					if instanceType ~= "none" then --clears waypoints inside instances
 						C_Map.ClearUserWaypoint()
@@ -81,7 +192,6 @@ if E.Retail then
 			end
 
 			--try to fix issue where the MapCanvasPinMixin:SetPassThroughButtons() will throw a taint
-
 
 			--[[WorldMapMixin.SetPassThroughButtons = E.noop
 			WorldMapMixin.CheckMouseButtonPassthrough = E.noop
@@ -107,7 +217,7 @@ if E.Retail then
 			--remove max distance
 			if not SuperTrackedFrame.EltruismHook then
 
-				--in 10.1.7 blizzard restricts waypoints, unrestrict them again
+				--blizzard restricts waypoints, unrestrict them again
 				hooksecurefunc(_G.C_Navigation, "HasValidScreenPosition", function()
 					return true
 				end)
@@ -136,12 +246,15 @@ if E.Retail then
 
 			SuperTrackedFrame.DistanceText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			EltruismTimeToArrive.TimeText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
+			EltruismTimeToArrive.WaypointText:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.general.fontSize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
 			if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.classcolortext then
 				SuperTrackedFrame.DistanceText:SetTextColor(valuecolors.r,valuecolors.g,valuecolors.b)
 				EltruismTimeToArrive.TimeText:SetTextColor(valuecolors.r,valuecolors.g,valuecolors.b)
+				EltruismTimeToArrive.WaypointText:SetTextColor(valuecolors.r,valuecolors.g,valuecolors.b)
 			else
 				SuperTrackedFrame.DistanceText:SetTextColor(E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorR, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorG, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorB)
 				EltruismTimeToArrive.TimeText:SetTextColor(E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorR, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorG, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorB)
+				EltruismTimeToArrive.WaypointText:SetTextColor(E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorR, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorG, E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.textcolorB)
 			end
 
 			--color icon
@@ -162,97 +275,10 @@ if E.Retail then
 			EltruismTimeToArriveParent:RegisterEvent("SUPER_TRACKING_CHANGED")
 			--EltruismTimeToArriveParent:SetScript("OnEvent", function(_, event)
 			EltruismTimeToArriveParent:SetScript("OnEvent", function()
-				local _, instanceType = IsInInstance()
+				local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 				--print(instanceType,event,"waypoint")
 				if (C_Map.HasUserWaypoint() or C_SuperTrack.IsSuperTrackingAnything()) and (instanceType == "none" or instanceType == "neighborhood") then
-					--use throttled onupdate to udpate the text (once per second)
-					EltruismTimeToArrive:SetScript("OnUpdate", function(_, elapsed)
-						--print("onupdate spam"..math.random(1,99))
-						TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-						if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
-							TimeSinceLastUpdate = 0
-
-							local notsafe
-							local speed = 0
-
-							--player speed can be secret, so protect in case there is a waypoint when it is
-							if ElvUI_EltreumUI:IsThisASafeSecret(GetUnitSpeed("player"),true) then
-								notsafe = false
-								speed = GetUnitSpeed("player") or GetUnitSpeed("vehicle")
-								if not speed or speed == 0 then
-									local _,_,flyspeed = GetUnitSpeed('player')
-									speed = flyspeed
-								end
-							else
-								notsafe = true
-							end
-
-							--calculate time to arrive
-							local distance = C_Navigation.GetDistance()
-							local seconds = 0
-							local minutes = 0
-							if IsPlayerMoving() or _G.UnitOnTaxi("player") then
-								if (not speed or speed == 0) or notsafe then --might be dragonflying or secret, calculate based on delta distance
-									E:Delay(1, function()
-										local previousdistance = C_Navigation.GetDistance()
-										speed = mathabs(distance - previousdistance)
-										--print(distance,previousdistance, speed)
-										if speed and speed > 0 then
-											local eta= mathabs(distance / speed)
-											if eta > 600 then
-												minutes = stringformat("%02.f", mathfloor(eta/60 ))
-												seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-											elseif eta < 600 and eta > 10 then
-												minutes = stringformat("%01.f", mathfloor(eta/60))
-												seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-											elseif eta < 10 then
-												minutes = stringformat("%01.f", mathfloor(eta/60))
-												seconds = stringformat("%1.d", mathfloor(eta - minutes *60))
-											else
-												minutes = stringformat("%02.f", mathfloor(eta/60))
-												seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-											end
-										end
-										--set the time to arrive to the frame's text
-										if minutes == 0 and seconds == 0 then
-											EltruismTimeToArrive.TimeText:SetText("***")
-										elseif minutes < "01" and seconds > "0" then
-											EltruismTimeToArrive.TimeText:SetText(seconds.."s")
-										else
-											EltruismTimeToArrive.TimeText:SetText(minutes.."m"..":"..seconds.."s")
-										end
-									end)
-								else
-									if speed and speed > 0 then
-										local eta= mathabs(distance / speed)
-										if eta > 600 then
-											minutes = stringformat("%02.f", mathfloor(eta/60 ))
-											seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-										elseif eta < 600 and eta > 10 then
-											minutes = stringformat("%01.f", mathfloor(eta/60))
-											seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-										elseif eta < 10 then
-											minutes = stringformat("%01.f", mathfloor(eta/60))
-											seconds = stringformat("%1.d", mathfloor(eta - minutes *60))
-										else
-											minutes = stringformat("%02.f", mathfloor(eta/60))
-											seconds = stringformat("%02.f", mathfloor(eta - minutes *60))
-										end
-									end
-									--set the time to arrive to the frame's text
-									if minutes == 0 and seconds == 0 then
-										EltruismTimeToArrive.TimeText:SetText("***")
-									elseif minutes < "01" and seconds > "0" then
-										EltruismTimeToArrive.TimeText:SetText(seconds.."s")
-									else
-										EltruismTimeToArrive.TimeText:SetText(minutes.."m"..":"..seconds.."s")
-									end
-								end
-							else --not moving at all
-								EltruismTimeToArrive.TimeText:SetText("***")
-							end
-						end
-					end)
+					EltruismTimeToArrive:SetScript("OnUpdate", ElvUI_EltreumUI.TimeToArriveOnUpdate)
 				else
 					EltruismTimeToArrive:SetScript("OnUpdate", nil)
 				end
@@ -265,7 +291,7 @@ if E.Retail then
 	-- translate text to coordinates that are then put into the Waypoint system, inspired by the Wayfinder weakaura by Khanibrawl
 	function ElvUI_EltreumUI:WaypointTexttoCoordinate(message)
 		-- most of this was done with the help of posts on stack overflow and lua-users.org
-		if E.Retail then
+		if E.Modern then
 			if E.db.ElvUI_EltreumUI.waypoints.waytext.enable then
 				-- translate the message into numbers
 				local translatemsg = message:gsub("(%d)[%.,] (%d)", "%1 %2"):gsub("(%d)"..(tonumber("1.1") and "," or ".").."(%d)", "%1"..(tonumber("1.1") and "." or ",").."%2")
@@ -282,9 +308,8 @@ if E.Retail then
 				end
 				local canSet = C_Map.CanSetUserWaypointOnMap(C_Map.GetBestMapForUnit("player"))
 
-
 				--neighborhoods dont let you set waypoints
-				local _, instanceType = IsInInstance()
+				local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 				if instanceType == "neighborhood" then
 					canSet = false
 				end
@@ -467,7 +492,7 @@ function ElvUI_EltreumUI:WorldMapScale()
 	if E.db.ElvUI_EltreumUI.otherstuff.worldmapscale then
 		if _G["WorldMapFrame"] then
 			_G["WorldMapFrame"]:HookScript("OnShow", function()
-				if not E.Retail then
+				if not E.Modern then
 					if not InCombatLockdown then
 						if not IsAddOnLoaded("Leatrix_Maps") then
 							_G["WorldMapFrame"]:SetScale(E.db.ElvUI_EltreumUI.otherstuff.worldmapscalevalue)
@@ -489,7 +514,7 @@ function ElvUI_EltreumUI:WorldMapScale()
 			end)
 
 			--make the bounty select mouseover
-			if E.Retail then
+			if E.Modern then
 				for _, v in pairs({_G["WorldMapFrame"]:GetChildren()}) do
 					if v then
 						if v.BountyDropDown and v.BountyDropdownButton then
@@ -551,13 +576,13 @@ end
 
 local function RotateMinimap()
 	if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.rotate then
-		if E.Retail then
+		if E.Modern then
 			Enum.EditModeMinimapSetting.RotateMinimap = 1
 		end
 		SetCVar("rotateMinimap",1)
 		E.db["general"]["minimap"]["rotate"] = true
 	else
-		if E.Retail then
+		if E.Modern then
 			Enum.EditModeMinimapSetting.RotateMinimap = 0
 		end
 		SetCVar("rotateMinimap",0)
@@ -691,7 +716,7 @@ function ElvUI_EltreumUI:MinimapCardinalDirections()
 		end
 	else
 
-		if E.Retail then
+		if E.Modern then
 			Enum.EditModeMinimapSetting.RotateMinimap = 0
 		end
 		SetCVar("rotateMinimap",0)
@@ -750,13 +775,22 @@ function ElvUI_EltreumUI:MinimapCardinalDirections()
 		end
 	end
 end
-hooksecurefunc(M,"UpdateSettings", ElvUI_EltreumUI.MinimapCardinalDirections)
+
+function ElvUI_EltreumUI:M_UpdateSettings()
+	if ElvUI_EltreumUI.MinimapCardinalDirections then
+		ElvUI_EltreumUI:MinimapCardinalDirections()
+	end
+	if ElvUI_EltreumUI.ElvUIMailTexture then
+		ElvUI_EltreumUI:ElvUIMailTexture()
+	end
+end
+ElvUI_EltreumUI:SecureHook(M, "UpdateSettings", "M_UpdateSettings")
 
 --setup onupdate and also get rid of it
 function ElvUI_EltreumUI:MinimapCardinalDirectionsRotateInstance()
 	RotateMinimap()
 	if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.enable and E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.rotate then
-		local _, instanceType = IsInInstance()
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		if instanceType == "none" then
 			if Minimap.EltruismRotate then
 				Minimap.EltruismRotate:Show()

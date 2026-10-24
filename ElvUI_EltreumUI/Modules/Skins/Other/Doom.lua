@@ -19,7 +19,6 @@ local GetItemInfo = _G.C_Item and _G.C_Item.GetItemInfo or _G.GetItemInfo
 local GetPetActionCooldown = _G.GetPetActionCooldown
 local CombatLogGetCurrentEventInfo = _G.CombatLogGetCurrentEventInfo
 local select = _G.select
-local IsInInstance = _G.IsInInstance
 local wipe = _G.wipe
 local GetActionInfo = _G.GetActionInfo
 local GetActionTexture = _G.GetActionTexture
@@ -30,6 +29,7 @@ local cooldowns, animating, watching = { }, { }, { }
 local petOverlay = {1,1,1}
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local C_VoiceChat = _G.C_VoiceChat
+local tostring = _G.tostring
 
 --createframes
 local DCP = CreateFrame("FRAME","EltruismDoomCDPulse")
@@ -52,7 +52,7 @@ E:CreateMover(DCP, "EltruismDoomMover", L["EltruismDoom"], nil, nil, nil, 'ALL,S
 
 -- preview function
 function ElvUI_EltreumUI:PreviewDoom()
-	if E.Retail then return end
+	if E.Modern then return end
 	if not E.Classic then
 		DCPT:SetTexture("Interface\\Icons\\Spell_Nature_Earthbind")
 	else
@@ -78,7 +78,7 @@ function ElvUI_EltreumUI:PreviewDoom()
 
 	if DCP:GetAlpha() == 1 and E.db.ElvUI_EltreumUI.skins.doom.ttsvoice ~= nil then
 		local tts = ElvUI_EltreumUI:EltruismSpellInfo(33786) or ElvUI_EltreumUI:EltruismSpellInfo(5197)
-		C_VoiceChat.SpeakText(E.db.ElvUI_EltreumUI.skins.doom.ttsvoice, tts, 1, E.db.ElvUI_EltreumUI.skins.doom.ttsvolume)
+		C_VoiceChat.SpeakText(E.db.ElvUI_EltreumUI.skins.doom.ttsvoice, tts, 1, E.db.ElvUI_EltreumUI.skins.doom.ttsvolume, true)
 	end
 
 	wasPreviewing = true
@@ -289,7 +289,7 @@ function ElvUI_EltreumUI:Doom()
 						end
 						if E.db.ElvUI_EltreumUI.skins.doom.tts and animating[1][3] then --and animating[1][3] ~= nil then
 							if E.db.ElvUI_EltreumUI.skins.doom.ttsvoice ~= nil then
-								C_VoiceChat.SpeakText(E.db.ElvUI_EltreumUI.skins.doom.ttsvoice, animating[1][3], 1, E.db.ElvUI_EltreumUI.skins.doom.ttsvolume)
+								C_VoiceChat.SpeakText(E.db.ElvUI_EltreumUI.skins.doom.ttsvoice, animating[1][3], 1, E.db.ElvUI_EltreumUI.skins.doom.ttsvolume, true)
 							end
 						end
 						DCPT:SetTexture(animating[1][1])
@@ -368,7 +368,7 @@ function ElvUI_EltreumUI:Doom()
 		end
 
 		function DCP:PLAYER_ENTERING_WORLD()
-			local inInstance,instanceType = IsInInstance()
+			local inInstance,instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,nil,true)
 			if (inInstance and instanceType == "arena") then
 				self:SetScript("OnUpdate", nil)
 				wipe(cooldowns)

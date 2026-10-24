@@ -2,7 +2,6 @@ local E = unpack(ElvUI)
 local _G = _G
 --local ObjectiveTracker_Collapse = _G.ObjectiveTracker_Collapse
 local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
-local IsInInstance = _G.IsInInstance
 --local ObjectiveTracker_Expand = _G.ObjectiveTracker_Expand
 local ObjectiveTrackerFrame = _G.ObjectiveTrackerFrame
 local tonumber = _G.tonumber
@@ -20,9 +19,10 @@ function ElvUI_EltreumUI:QuestCombat(event)
 	if E.db.ElvUI_EltreumUI.dev then
 		ElvUI_EltreumUI:Print(event)
 	end
+	local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 	if event == "PLAYER_REGEN_ENABLED" then --out of combat
 		if E.db.ElvUI_EltreumUI.quests.combatenable or otherBossEncounter then
-			if E.Retail then
+			if E.Modern then
 				--[[if _G.ObjectiveTrackerFrame:IsCollapsed() then
 					_G.ObjectiveTrackerFrame:ToggleCollapsed() --seems like this causes taints
 				end]]
@@ -58,7 +58,7 @@ function ElvUI_EltreumUI:QuestCombat(event)
 		end
 	elseif event == "PLAYER_REGEN_DISABLED" then --entered combat
 		if E.db.ElvUI_EltreumUI.quests.combatenable or (E.db.ElvUI_EltreumUI.quests.enable and _G.UnitExists("boss1")) then
-			if E.Retail then
+			if E.Modern then
 				--[[if _G.ObjectiveTrackerFrame:IsCollapsed() == false then
 					_G.ObjectiveTrackerFrame:ToggleCollapsed() --seems like this causes taints
 				end]]
@@ -95,10 +95,9 @@ function ElvUI_EltreumUI:QuestCombat(event)
 		end
 	elseif event == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then --started boss fight
 		if E.db.ElvUI_EltreumUI.quests.enable then
-			local _, instanceType = IsInInstance()
 			if instanceType == "raid" or instanceType == "party" or instanceType == "scenario" then
 				if _G.UnitExists("boss1") then
-					if E.Retail then
+					if E.Modern then
 						--ObjectiveTracker_Collapse()
 						--ObjectiveTrackerFrame:Hide()
 						ObjectiveTrackerFrame:SetParent(E.HiddenFrame)
@@ -127,7 +126,7 @@ function ElvUI_EltreumUI:QuestCombat(event)
 					end
 					otherBossEncounter = true
 				else
-					if E.Retail then
+					if E.Modern then
 						if _G["ObjectiveFrameHolder"] then
 							ObjectiveTrackerFrame:SetParent(_G["ObjectiveFrameHolder"])
 						else
@@ -160,9 +159,8 @@ function ElvUI_EltreumUI:QuestCombat(event)
 		end
 	elseif event == "ENCOUNTER_START" then --started boss fight
 		if E.db.ElvUI_EltreumUI.quests.enable then
-			local _, instanceType = IsInInstance()
 			if instanceType == "raid" or instanceType == "party" or instanceType == "scenario" then --and event == "PLAYER_REGEN_DISABLED"
-				if E.Retail then
+				if E.Modern then
 					--ObjectiveTracker_Collapse()
 					--ObjectiveTrackerFrame:Hide()
 					ObjectiveTrackerFrame:SetParent(E.HiddenFrame)
@@ -196,9 +194,8 @@ function ElvUI_EltreumUI:QuestCombat(event)
 			if _G.InCombatLockdown() then
 				E:Delay(3,ElvUI_EltreumUI.QuestEncounterEnd) --retry soon
 			else
-				local _, instanceType = IsInInstance()
 				if (instanceType == "raid" or instanceType == "party" or instanceType == "scenario") then --and event == "PLAYER_REGEN_DISABLED"
-					if E.Retail then
+					if E.Modern then
 						if _G["ObjectiveFrameHolder"] then
 							ObjectiveTrackerFrame:SetParent(_G["ObjectiveFrameHolder"])
 						else
@@ -256,9 +253,9 @@ end
 --hide quests in arena/bg matches
 function ElvUI_EltreumUI:ArenaQuest()
 	if E.db.ElvUI_EltreumUI.quests.arena then
-		local _, instanceType = IsInInstance()
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		if instanceType == "arena" or instanceType == "pvp" then
-			if E.Retail then
+			if E.Modern then
 				--ObjectiveTrackerFrame:Hide()
 				ObjectiveTrackerFrame:SetParent(E.HiddenFrame)
 				--ObjectiveTrackerFrame:SetAlpha(0)
@@ -285,7 +282,7 @@ function ElvUI_EltreumUI:ArenaQuest()
 				end
 			end
 		elseif instanceType == "none" then
-			if E.Retail then
+			if E.Modern then
 				if _G["ObjectiveFrameHolder"] then
 					ObjectiveTrackerFrame:SetParent(_G["ObjectiveFrameHolder"])
 				else

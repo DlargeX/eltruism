@@ -2,13 +2,12 @@ local E = unpack(ElvUI)
 local _G = _G
 local classcolor = E.myClassColor
 local CreateFrame = _G.CreateFrame
-local IsInInstance = _G.IsInInstance
 local UIFrameFadeIn = _G.UIFrameFadeIn
 local UIFrameFadeOut = _G.UIFrameFadeOut
 
 function ElvUI_EltreumUI:SkinLevelUp()
 	-- Color level up display and boss banner originally by Aftermathh, 9.1 partially by Eltreum
-	if E.Retail or E.Mists or E.TBC or E.Wrath then
+	if E.Modern or E.Mists or E.TBC or E.Wrath then
 		if E.db.ElvUI_EltreumUI.skins.levelbossinstance then
 
 			--skin the toast popup for level
@@ -130,7 +129,7 @@ function ElvUI_EltreumUI:SkinLevelUp()
 	if E.db.ElvUI_EltreumUI.skins.bossemote and _G.RaidBossEmoteFrame then
 		_G.RaidBossEmoteFrame:SetScale(E.db.ElvUI_EltreumUI.skins.blizzframes.bossScale)
 		local RaidBossEmoteFrame = _G.RaidBossEmoteFrame
-		local _, instanceType = IsInInstance()
+		local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 		if instanceType == "raid" or instanceType == "party" or instanceType == "scenario" then --fix for WQs that use the boss emote frame
 			RaidBossEmoteFrame:UnregisterEvent("RAID_BOSS_EMOTE")
 			RaidBossEmoteFrame:UnregisterEvent("RAID_BOSS_WHISPER")

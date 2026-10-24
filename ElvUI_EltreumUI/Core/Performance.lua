@@ -20,7 +20,7 @@ function ElvUI_EltreumUI:PerformanceOptimization()
 
 	E.db["auras"]["buffs"]["seperateOwn"] = 0 -- do not sort auras
 	E.db["auras"]["debuffs"]["seperateOwn"] = 0 -- do not sort auras
-	E.db["auras"]["cooldown"]["override"] = false
+	--E.db["auras"]["cooldown"]["override"] = false
 	E.db["chat"]["fade"] = true -- fade text again
 	E.db["unitframe"]["units"]["assist"]["enable"] = false --disable assist/tank frames
 	E.db["unitframe"]["units"]["tank"]["enable"] = false --disable assist/tank frames
@@ -193,7 +193,7 @@ end
 
 function ElvUI_EltreumUI:PerformanceCVars(command,login)
 	if login then --these get reset on logout/login, TODO confirm they still do
-		if E.Retail then
+		if E.Modern then
 			SetCVar('spellVisualDensityFilterSetting', 1)
 		end
 	elseif command then
@@ -219,6 +219,11 @@ function ElvUI_EltreumUI:PerformanceCVars(command,login)
 		SetCVar('ResampleQuality', 3) --use FSR
 		SetCVar('raidGraphicsSpellDensity', 1) --use the new
 		SetCVar('graphicsSpellDensity', 1) --use the new
+		--SetCVar('refraction', 2) --needs more testing
+
+		--personal graphics
+		--SetCVar("Brightness", 45)
+		--SetCVar("Contrast", 60)
 
 		--LOD things
 		SetCVar('entityLodDist',10) --USEDEFAULT (lowest) value

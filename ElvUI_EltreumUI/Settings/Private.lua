@@ -44,6 +44,8 @@ V.ElvUI_EltreumUI = {
 		shufflelist = "None",
 		bossmusic = false,
 		bossfile = "None",
+		duelmusic = false,
+		duelfile = "None",
 		disableinstance = false,
 	},
 
@@ -57,7 +59,7 @@ V.ElvUI_EltreumUI = {
 	isInstalled ={
 		sle = false,
 		windtools = false,
-		projectazilroka = false,
+		--projectazilroka = false,
 	}
 
 }

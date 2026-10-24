@@ -3,7 +3,6 @@ local _G = _G
 local CreateFrame = _G.CreateFrame
 local WorldFrame = _G.WorldFrame
 local UIParent = _G.UIParent
-local IsInInstance = _G.IsInInstance
 local select = _G.select
 local IsEncounterSuppressingRelease = _G.IsEncounterSuppressingRelease
 local ObjectiveTrackerFrame = _G.ObjectiveTrackerFrame
@@ -12,6 +11,7 @@ local PlaySoundFile = _G.PlaySoundFile
 local UIFrameFadeIn = _G.UIFrameFadeIn
 local UIFrameFadeOut = _G.UIFrameFadeOut
 local GetPlayerAuraBySpellID = _G.C_UnitAuras and _G.C_UnitAuras.GetPlayerAuraBySpellID
+local pairs = _G.pairs
 
 --Dark Souls Death, my first weakaura adapted
 local deathFrame = CreateFrame("FRAME", "EltruismDeathFrame", WorldFrame)
@@ -63,7 +63,7 @@ local function PlayDeathAnimation()
 
 	if isAnimationPlaying then return end
 
-	local _, instanceType = IsInInstance()
+	local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
 
 	if IsEncounterSuppressingRelease() or instanceType ~= "none" or HasIgnoredDeathSpell() then
 		return
@@ -92,7 +92,7 @@ local function PlayDeathAnimation()
 	deathBanner:ClearAllPoints()
 
 	UIParent:SetAlpha(0)
-	if E.Retail then
+	if E.Modern then
 		ObjectiveTrackerFrame:SetAlpha(0)
 	end
 	Minimap:Hide()
@@ -200,7 +200,9 @@ local function PlayDeathAnimation()
 			_G["EltruismPlayerPowerBarEffect"]:SetAlpha(0.4)
 		end
 		UIParent:SetAlpha(1)
-		if E.Retail then ObjectiveTrackerFrame:SetAlpha(1) end
+		if E.Modern then
+			ObjectiveTrackerFrame:SetAlpha(1)
+		end
 		Minimap:SetAlpha(1)
 		Minimap:Show()
 
