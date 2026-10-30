@@ -36,6 +36,11 @@ function ElvUI_EltreumUI:LoadCommands()
 	self:RegisterChatCommand('eltruism', 'RunCommands')
 	self:RegisterChatCommand('eltruismdebug', 'DebugMode')
 
+	--prevent unsafe reloads in combat
+	self:RegisterChatCommand('reload', 'BlockCombatReload')
+	self:RegisterChatCommand('reloadui', 'BlockCombatReload')
+	self:RegisterChatCommand('rl', 'BlockCombatReload')
+
 	--add to moveui table
 	if not self.ConfigModeAddedEltruism then
 		E:ConfigMode_AddGroup("ELTREUMUI",ElvUI_EltreumUI.Name)
@@ -72,12 +77,12 @@ function ElvUI_EltreumUI:RunCommands(message)
 			local aCopper = GetCoinIcon(1)
 			--RaidNotice_AddMessage(RaidWarningFrame, "Raid Boss Emote Frame Raid Warning Test Message", ChatTypeInfo["RAID_WARNING"], 10)
 			if E.Modern then
-				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."9.999.999 Gold", _G.CombatTextUtil.StandardScroll, 255, 255, 255, nil, true)
+				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."9.999.999 Gold", _G.EltruismCombatText.StandardScroll, 255, 255, 255, nil, true)
 			elseif E.Classic or E.Mists or E.TBC or E.Wrath then
-				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."214.748 Gold |T ".. aSilver ..":22:22:0:0:64:64:5:59:5:59|t ".."36 Silver |T ".. aCopper ..":22:22:0:0:64:64:5:59:5:59|t ".."47 Copper", _G.CombatTextUtil.StandardScroll, 255, 255, 255, nil, true)
+				_G.EltruismCombatText:AddMessage("|T ".. aImage ..":22:22:0:0:64:64:5:59:5:59|t ".."214.748 Gold |T ".. aSilver ..":22:22:0:0:64:64:5:59:5:59|t ".."36 Silver |T ".. aCopper ..":22:22:0:0:64:64:5:59:5:59|t ".."47 Copper", _G.EltruismCombatText.StandardScroll, 255, 255, 255, nil, true)
 			end
 		else
-			_G.EltruismCombatText:AddMessage("|T ".. 136176 ..":22:22:-11:-11:64:64:5:59:5:59|t ".."Eltruism Loot is currently disabled!", _G.CombatTextUtil.StandardScroll, 255, 255, 255, nil, true)
+			_G.EltruismCombatText:AddMessage("|T ".. 136176 ..":22:22:-11:-11:64:64:5:59:5:59|t ".."Eltruism Loot is currently disabled!", _G.EltruismCombatText.StandardScroll, 255, 255, 255, nil, true)
 		end
 	elseif message == 'config' or message == 'options' or message == '' then
 		if not InCombatLockdown() then
@@ -401,6 +406,16 @@ function ElvUI_EltreumUI:DebugMode(message)
 	else
 		ElvUI_EltreumUI:Print("Usage: /eltruismdebug on or /eltruismdebug off, to enable or disable debug mode")
 	end
+end
+
+function ElvUI_EltreumUI:BlockCombatReload()
+	if InCombatLockdown() then
+		_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
+		_G.print("|cFFFF0000Cannot reload UI while in combat.|r")
+		return
+	end
+
+	ReloadUI()
 end
 
 --Adapted from Luckyone's +keys as requested by khornan

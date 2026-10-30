@@ -291,7 +291,6 @@ Cursor is a fork of CastCursor by michaelsp which licensed under GNU GPLv3
 FreeVector (www.freevector.com) for some of the icons. List in license.txt
 Icons8 (www.icons8.com) for some of the icons. List in license.txt
 Loot Icons are merged from Chat Loot Icons by Stanzilla which is licensed under Public Domain
-LootText is a fork of SLoTe from xavjer which is licensed under GNU GPLv3
 Quest Items is a merge of QBar by Aezay, which is licensed under GNU GPLv3
 Rogue Door Opener is a fork of Rogue Door Opener by Burzolog which licensed under GNU GPLv3
 ]] or [[
@@ -301,7 +300,6 @@ Cursor is a fork of CastCursor by michaelsp which licensed under GNU GPLv3
 FreeVector (www.freevector.com) for some of the icons. List in license.txt
 Icons8 (www.icons8.com) for some of the icons. List in license.txt
 Loot Icons are merged from Chat Loot Icons by Stanzilla which is licensed under Public Domain
-LootText is a fork of SLoTe from xavjer which is licensed under GNU GPLv3
 Quest Items is a merge of QBar by Aezay, which is licensed under GNU GPLv3
 Sockets and Enchants is a fork of Kibs Item Levels by Kibsgaard which is licensed under Public Domain
 The Item Level shown on the Character Panel Skin uses code from Simple Item level by Kemayo, licensed under BSD
@@ -311,6 +309,7 @@ The Item Level shown on the Character Panel Skin uses code from Simple Item leve
 	E.Libs.ACH:Header(name, order, get, set, hidden)
 	E.Libs.ACH:Group(name, desc, order, childGroups, get, set, disabled, hidden, func)
 	E.Libs.ACH:Description(name, order, fontSize, image, imageCoords, imageWidth, imageHeight, width, hidden)
+	E.Libs.ACH:Spacer(order, width, hidden)
 
 	E.Libs.ACH:Toggle(name, desc, order, tristate, confirm, width, get, set, disabled, hidden)
 	E.Libs.ACH:Execute(name, desc, order, func, image, confirm, width, get, set, disabled, hidden)
@@ -318,12 +317,14 @@ The Item Level shown on the Character Panel Skin uses code from Simple Item leve
 	E.Libs.ACH:Input(name, desc, order, multiline, width, get, set, disabled, hidden, validate)
 	E.Libs.ACH:Color(name, desc, order, alpha, width, get, set, disabled, hidden)
 	E.Libs.ACH:Range(name, desc, order, values, width, get, set, disabled, hidden)
+	E.Libs.ACH:MultiSelect(name, desc, order, values, confirm, width, get, set, disabled, hidden, sortByValue)
 
 	E.Libs.ACH:SharedMediaFont(name, desc, order, width, get, set, disabled, hidden)
 	E.Libs.ACH:SharedMediaSound(name, desc, order, width, get, set, disabled, hidden)
 	E.Libs.ACH:SharedMediaStatusbar(name, desc, order, width, get, set, disabled, hidden)
 	E.Libs.ACH:SharedMediaBackground(name, desc, order, width, get, set, disabled, hidden)
 	E.Libs.ACH:SharedMediaBorder(name, desc, order, width, get, set, disabled, hidden)
+	E.Libs.ACH:FontFlags(name, desc, order, width, get, set, disabled, hidden)
 	]]--
 
 	E.Options.args.ElvUI_EltreumUI = ElvUI_EltreumUI.Options
