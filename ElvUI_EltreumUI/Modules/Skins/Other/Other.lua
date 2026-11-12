@@ -23,13 +23,14 @@ function ElvUI_EltreumUI:GradientMirrorLoot()
 		if not E.Modern then
 			for i = 1, 3 do
 				local statusBar = _G['MirrorTimer'..i..'StatusBar']
-				if statusBar then
+				if statusBar and not statusBar.EltruismGradientHook then
 					statusBar:HookScript("OnShow", function()
 						statusBar:SetSize(E.db.ElvUI_EltreumUI.otherstuff.mirrorx, E.db.ElvUI_EltreumUI.otherstuff.mirrory)
 						statusBar:SetScale(E.db.ElvUI_EltreumUI.otherstuff.mirrorscale)
 						local r,g,b,a = statusBar:GetStatusBarColor()
 						statusBar:GetStatusBarTexture():SetGradient("HORIZONTAL", {r=r - 0.3,g= g - 0.3,b= b - 0.3,a= a}, {r=r + 0.2,g= g + 0.2,b= b + 0.2,a= a})
 					end)
+					statusBar.EltruismGradientHook = true
 				end
 			end
 		else
@@ -389,7 +390,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 
 		--create vellum button
 		local vellumbutton
-		if not E.Classic then
+		if not (E.Classic or E.Forever) then
 			if not _G["EltruismVellumButton"] then
 				if E.Modern then
 					vellumbutton = CreateFrame("BUTTON", "EltruismVellumButton", _G["ProfessionsFrame"], "MagicButtonTemplate")
@@ -407,7 +408,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 		--create disenchant button
 		local disenchantbutton
 		if not _G["EltruismDisenchantButton"] then
-			if E.Modern then
+			if E.Retail then
 				disenchantbutton = CreateFrame("BUTTON", "EltruismDisenchantButton", _G["ProfessionsFrame"], "MagicButtonTemplate,InsecureActionButtonTemplate")
 				disenchantbutton:SetPoint("RIGHT", "EltruismVellumButton", "LEFT", -1, 0)
 			else
@@ -416,7 +417,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 			end
 			S:HandleButton(disenchantbutton)
 
-			if not E.Classic then
+			if not (E.Classic or E.Forever) then
 				local vellum = GetItemInfo(38682)
 				if vellum then
 					vellum = stringmatch(vellum, "%s+(%S+)")
@@ -443,7 +444,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 			disenchantbutton:SetText(disenchant)
 			disenchantbutton:SetAttribute("type1", "spell")
 			disenchantbutton:SetAttribute("spell", "13262")
-			if not E.Classic then
+			if not (E.Classic or E.Forever) then
 				local vellum = GetItemInfo(38682)
 				if vellum then
 					vellumbutton:SetScript("OnShow", function()
@@ -474,7 +475,7 @@ function ElvUI_EltreumUI:EnchantScroll()
 		end
 
 		--fix disenchant overlap with create all
-		if E.Modern then
+		if E.Retail then
 			if _G.ProfessionsFrame.CraftingPage.CreateAllButton then
 				_G.ProfessionsFrame.CraftingPage.CreateAllButton:SetScript("OnShow", function()
 					vellumbutton:ClearAllPoints()
@@ -500,12 +501,12 @@ function ElvUI_EltreumUI:EnchantScroll()
 					tradeskilltext = _G.TradeSkillFrameTitleText:GetText()
 				end
 				if tradeskilltext and tradeskilltext:match(enchantingtext) then
-					if not E.Classic then
+					if not (E.Classic or E.Forever) then
 						vellumbutton:Show()
 					end
 					disenchantbutton:Show()
 				else
-					if not E.Classic then
+					if not (E.Classic or E.Forever) then
 						vellumbutton:Hide()
 					end
 					disenchantbutton:Hide()
@@ -555,6 +556,7 @@ local lastPVPInfoText = ""
 local ONUPDATE_INTERVAL = 0.016 --if 1 then the text changes too slow
 local TimeSinceLastUpdate = 0
 function ElvUI_EltreumUI.ZoneTextFrame_OnUpdate(_,elapsed)
+	if not (_G.ZoneTextFrame and _G.ZoneTextFrame:IsShown()) then return end
 	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
 	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
 		TimeSinceLastUpdate = 0
@@ -588,10 +590,12 @@ end
 
 local lastSubZoneText = ""
 local lastPVPArenaText = ""
+local TimeSinceLastUpdateSubZone = 0
 function ElvUI_EltreumUI.SubZoneTextFrame_OnUpdate(_,elapsed)
-	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
-		TimeSinceLastUpdate = 0
+	if not (_G.SubZoneTextFrame and _G.SubZoneTextFrame:IsShown()) then return end
+	TimeSinceLastUpdateSubZone = TimeSinceLastUpdateSubZone + elapsed
+	if TimeSinceLastUpdateSubZone >= ONUPDATE_INTERVAL then
+		TimeSinceLastUpdateSubZone = 0
 		local subZoneText = _G.SubZoneTextString:GetText()
 		if subZoneText and subZoneText ~= lastSubZoneText and not subZoneText:match("|r|c") then
 			local r,g,b = _G.SubZoneTextString:GetTextColor()
@@ -646,12 +650,15 @@ function ElvUI_EltreumUI:EltruismHideTalkingHead()
 			EltruismHideTalkingHead:SetScript('OnEvent', function(_, event)
 				if event == 'PLAYER_ENTERING_WORLD' or event == 'ADDON_LOADED' or IsAddOnLoaded("Blizzard_TalkingHeadUI") then
 					if _G["TalkingHeadFrame"] then
-						_G.hooksecurefunc(_G["TalkingHeadFrame"], "PlayCurrent", function()
-							_G["TalkingHeadFrame"]:Hide()
-						end)
-						_G.hooksecurefunc(_G["TalkingHeadFrame"], "Reset", function()
-							_G["TalkingHeadFrame"]:Hide()
-						end)
+						if not _G["TalkingHeadFrame"].EltruismHooked then
+							_G.hooksecurefunc(_G["TalkingHeadFrame"], "PlayCurrent", function()
+								_G["TalkingHeadFrame"]:Hide()
+							end)
+							_G.hooksecurefunc(_G["TalkingHeadFrame"], "Reset", function()
+								_G["TalkingHeadFrame"]:Hide()
+							end)
+							_G["TalkingHeadFrame"].EltruismHooked = true
+						end
 						EltruismHideTalkingHead:UnregisterAllEvents()
 					end
 				end
@@ -678,6 +685,14 @@ function ElvUI_EltreumUI:SkinVehicleButton()
 			_G["MainMenuBarVehicleLeaveButton"]:GetPushedTexture():SetVertexColor(1,0,0,1)
 			_G["MainMenuBarVehicleLeaveButton"]:GetDisabledTexture():SetTexture("Interface\\AddOns\\ElvUI\\Game\\Shared\\Media\\Textures\\ExitVehicle")
 			_G["MainMenuBarVehicleLeaveButton"]:GetDisabledTexture():SetVertexColor(1,0,0,1)
+			if E.db.ElvUI_EltreumUI.skins.shadow.enable then
+				if _G["MainMenuBarVehicleLeaveButton"].backdrop then
+					if not _G["MainMenuBarVehicleLeaveButton"].backdrop.shadow then
+						_G["MainMenuBarVehicleLeaveButton"].backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+						ElvUI_EltreumUI:ShadowColor(_G["MainMenuBarVehicleLeaveButton"].backdrop.shadow)
+					end
+				end
+			end
 		end
 	end
 end

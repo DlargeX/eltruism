@@ -72,6 +72,17 @@ function ElvUI_EltreumUI:AuthorMVPDonatorIcons()
 			["Player-5815-02ABD3B9"] = EltreumIcon,
 			["Player-5815-02ABDC2E"] = EltreumIcon,
 			["Player-5815-02ABDDBF"] = EltreumIcon,
+
+			--Forever
+			["Player-6929-0074BBBD"] = EltreumIcon,
+			["Player-6929-0079A95E"] = EltreumIcon,
+			["Player-6929-00768470"] = EltreumIcon,
+			["Player-6929-00794E48"] = EltreumIcon,
+			["Player-6929-0078B796"] = EltreumIcon,
+			["Player-6929-00782E28"] = EltreumIcon,
+			["Player-6929-00778DC3"] = EltreumIcon,
+			["Player-6929-0076DE93"] = EltreumIcon,
+			["Player-6929-0075F7D2"] = EltreumIcon,
 		}
 
 		--Donators
@@ -354,8 +365,8 @@ function ElvUI_EltreumUI:GetPFlag(specialFlag, zoneChannelID, unitGUID)
 				local race = data.englishRace or "Human"
 				local sex = (not data.sex or data.sex == 1) and 2 or data.sex
 				local folder = E.Retail and "Retail" or "Classic"
-
-				raceStr = strformat("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Races\\%s\\%s%d.tga:0:0:0:0|t", folder, race, sex)
+				local size = E.db.chat.fontSize or 12
+				raceStr = strformat("|TInterface\\Addons\\ElvUI_EltreumUI\\Media\\Textures\\Races\\%s\\%s%d.tga:"..size..":"..size..":0:0|t", folder, race, sex)
 			end
 
 			local tag = ""

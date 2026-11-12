@@ -232,6 +232,8 @@ end
 
 function ElvUI_EltreumUI:ApplyAuraBarBackdropRetail(container, button)
 	if not (button and button.statusbar) then return end
+	if button.CanBeAccessedInContext and not button:CanBeAccessedInContext() then return end
+	if button.statusbar.CanBeAccessedInContext and not button.statusbar:CanBeAccessedInContext() then return end
 	local barTexture = button.statusbar:GetStatusBarTexture()
 	if not barTexture or not ElvUI_EltreumUI:IsThisASafeSecret(barTexture, true) then return end
 
@@ -245,6 +247,10 @@ function ElvUI_EltreumUI:ApplyAuraBarBackdropRetail(container, button)
 	barTexture:SetAlpha(ba)
 	button.statusbar.isSettingBackdrop = false
 
+	if button.dispelBorder and button.border then
+		button.dispelBorder:ClearAllPoints()
+		button.dispelBorder:SetAllPoints(button.border)
+	end
 	if button.statusbar.backdrop and button.statusbar.backdrop.Center then
 		button.statusbar.backdrop.Center:Hide()
 	end
@@ -255,6 +261,8 @@ end
 
 function ElvUI_EltreumUI:ApplyAuraBarColorRetail(container, button, auraData)
 	if not (button and button.border and button.statusbar) then return end
+	if button.CanBeAccessedInContext and not button:CanBeAccessedInContext() then return end
+	if button.border.CanBeAccessedInContext and not button.border:CanBeAccessedInContext() then return end
 	if not ElvUI_EltreumUI:IsThisASafeSecret(button.border, true) then return end
 
 	local gm = E.db.ElvUI_EltreumUI.unitframes.gradientmode
@@ -290,6 +298,7 @@ function ElvUI_EltreumUI:ApplyAuraBarSparkRetail(container, button)
 
 	local spark = button.spark or (button.statusbar and button.statusbar.spark)
 	if not spark then return end
+	if spark.CanBeAccessedInContext and not spark:CanBeAccessedInContext() then return end
 
 	spark:Show()
 	local reverseFill = container and container.reverseFill
@@ -306,6 +315,8 @@ end
 
 function ElvUI_EltreumUI:ApplyThinModeRetail(container, button)
 	if not (button and button.statusbar) then return end
+	if button.CanBeAccessedInContext and not button:CanBeAccessedInContext() then return end
+	if button.statusbar.CanBeAccessedInContext and not button.statusbar:CanBeAccessedInContext() then return end
 	local eltruismDB = E.db.ElvUI_EltreumUI
 	local db = eltruismDB.unitframes
 	if not db.thinmodeaurabars then return end
@@ -346,9 +357,9 @@ function ElvUI_EltreumUI:ApplyThinModeRetail(container, button)
 		button.backdrop:SetSize(25, 15)
 	end
 
-	if button.dispelBorder and button.backdrop then
+	if button.dispelBorder and button.border then
 		button.dispelBorder:ClearAllPoints()
-		button.dispelBorder:SetAllPoints(button.backdrop)
+		button.dispelBorder:SetAllPoints(button.border)
 	end
 
 	--icon texture
@@ -418,6 +429,8 @@ function ElvUI_EltreumUI:UpdateRetailAuraBar(container, button, auraData)
 	if not E.private.unitframe.enable then return end
 	if not E.db.ElvUI_EltreumUI.unitframes.UFmodifications then return end
 	if not (button and button.statusbar) then return end
+	if button.CanBeAccessedInContext and not button:CanBeAccessedInContext() then return end
+	if button.statusbar.CanBeAccessedInContext and not button.statusbar:CanBeAccessedInContext() then return end
 
 	local db = E.db.ElvUI_EltreumUI.unitframes
 	if not (db and db.gradientmode and db.gradientmode.enableaurabars) then return end
@@ -506,38 +519,4 @@ end
 
 if not E.Modern then
 	ElvUI_EltreumUI:SecureHook(UF, "PostUpdateBar_AuraBars", "AuraBarGradient")
-else
-	local function HookAuraContainerUtil() --use blizzard's util, but it might work for other things
-		if _G.AuraContainerUtil and not ElvUI_EltreumUI.AuraContainerUtilHooked then
-			if _G.AuraContainerUtil.SetSpellNameForAura then
-				hooksecurefunc(_G.AuraContainerUtil, "SetSpellNameForAura", function(auraButton, _, auraData)
-					if auraButton and auraButton.statusbar then
-						local container = auraButton.container or auraButton:GetParent()
-						if container and container.isAuraBar then
-							ElvUI_EltreumUI:UpdateRetailAuraBar(container, auraButton, auraData)
-						end
-					end
-				end)
-			end
-			if _G.AuraContainerUtil.SetIconTextureForAura then
-				hooksecurefunc(_G.AuraContainerUtil, "SetIconTextureForAura", function(auraButton, texture)
-					if auraButton and auraButton.statusbar and E.db.ElvUI_EltreumUI.unitframes.thinmodeaurabars then
-						local container = auraButton.container or auraButton:GetParent()
-						if container and container.isAuraBar and texture and ElvUI_EltreumUI:IsThisASafeSecret(texture, true) then
-							texture:SetTexCoord(0.08, 0.92, 0.2799995956419, 0.7200004043581)
-						end
-					end
-				end)
-			end
-			ElvUI_EltreumUI.AuraContainerUtilHooked = true
-		end
-	end
-	HookAuraContainerUtil()
-
-	local retailAuraEventFrame = _G.CreateFrame("Frame")
-	retailAuraEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-	retailAuraEventFrame:SetScript("OnEvent", function(_, event)
-		HookAuraContainerUtil()
-		retailAuraEventFrame:UnregisterEvent(event)
-	end)
 end

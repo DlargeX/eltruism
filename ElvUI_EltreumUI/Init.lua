@@ -29,7 +29,7 @@ _G["BINDING_NAME_CLICK EltruismQuestItem12:LeftButton"] = "Quest Item 12"
 --Constants
 local rawVersion,extra = GetAddOnMetadata("ElvUI_EltreumUI", 'Version')
 if stringfind(rawVersion, 'project%-version') then
-	ElvUI_EltreumUI.Version = "5.1.6-Dev"
+	ElvUI_EltreumUI.Version = "5.1.9-Dev"
 	ElvUI_EltreumUI.DevRelease = true
 elseif extra and extra ~= "" then
 	ElvUI_EltreumUI.DevRelease = true
@@ -155,6 +155,7 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 		ElvUI_EltreumUI:DungeonRoleIcons() -- add spec icons to the lfg frame
 	end
 	ElvUI_EltreumUI:SkinQuests() --skins quest objective frame to be class colored
+	ElvUI_EltreumUI:UpdateZoneQuests() --only show quests in current map
 	ElvUI_EltreumUI:WorldMapScale() -- set world map scale
 	if E.private.nameplates.enable then
 		ElvUI_EltreumUI:NamePlateOptions() --adds dynamic class based color filters to elvui nameplates
@@ -173,7 +174,9 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:PlayerItemQuality("player") --add item quality texture to character panel skin
 	ElvUI_EltreumUI:CooldownColors() --changes cooldown colors to be class colored
 	ElvUI_EltreumUI:GradientMirrorLoot() --gradient misc frames like breath/lootroll
+	ElvUI_EltreumUI:UpdateRectangleMinimap() -- rectangle minimap
 	ElvUI_EltreumUI:MinimapCardinalDirections() -- minimap cardinal directions
+	ElvUI_EltreumUI:MinimapButtonBar() -- minimap button bar
 	ElvUI_EltreumUI:AutoCombatLog() -- automatic combat logging inside instances + advanced log for warcraftlogs
 	ElvUI_EltreumUI:FrameScales() --misc frames scales
 	ElvUI_EltreumUI:NPClassificatioNIcon() -- add different elite/rare icons to np
@@ -190,10 +193,13 @@ function ElvUI_EltreumUI:PLAYER_ENTERING_WORLD()
 	ElvUI_EltreumUI:InitializePortraits(true) --blinkii's mmediatag portraits
 
 	--hardcore requires loading tags later so db is confirmed loaded
-	ElvUI_EltreumUI:LoadHealthTags()
-	ElvUI_EltreumUI:LoadIconTags()
-	ElvUI_EltreumUI:LoadNameTags()
-	ElvUI_EltreumUI:LoadOtherTags()
+	if not self.TagsLoaded then
+		ElvUI_EltreumUI:LoadHealthTags()
+		ElvUI_EltreumUI:LoadIconTags()
+		ElvUI_EltreumUI:LoadNameTags()
+		ElvUI_EltreumUI:LoadOtherTags()
+		self.TagsLoaded = true
+	end
 	ElvUI_EltreumUI:GradientNameplatesHooks()
 	ElvUI_EltreumUI:InstanceIndicator() --for the instance texts
 end
@@ -313,6 +319,7 @@ function ElvUI_EltreumUI:PLAYER_REGEN_ENABLED(event)
 	ElvUI_EltreumUI:QuestCombat(event)
 	ElvUI_EltreumUI:MinimapHide(event)
 	ElvUI_EltreumUI:DatatextHide(event)
+	ElvUI_EltreumUI:UpdateZoneQuests(event)
 end
 
 function ElvUI_EltreumUI:PLAYER_REGEN_DISABLED(event)
@@ -332,6 +339,7 @@ function ElvUI_EltreumUI:ZONE_CHANGED()
 	if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.rotate then
 		ElvUI_EltreumUI:MinimapCardinalDirectionsRotateInstance()
 	end
+	E:Delay(0.5, ElvUI_EltreumUI.UpdateZoneQuests)
 end
 
 function ElvUI_EltreumUI:ZONE_CHANGED_INDOORS()
@@ -341,6 +349,7 @@ function ElvUI_EltreumUI:ZONE_CHANGED_INDOORS()
 	if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.rotate then
 		ElvUI_EltreumUI:MinimapCardinalDirectionsRotateInstance()
 	end
+	E:Delay(0.5, ElvUI_EltreumUI.UpdateZoneQuests)
 end
 
 function ElvUI_EltreumUI:ZONE_CHANGED_NEW_AREA()
@@ -350,6 +359,11 @@ function ElvUI_EltreumUI:ZONE_CHANGED_NEW_AREA()
 		ElvUI_EltreumUI:MinimapCardinalDirectionsRotateInstance()
 	end
 	ElvUI_EltreumUI:InstanceIndicator()
+	E:Delay(0.5, ElvUI_EltreumUI.UpdateZoneQuests)
+end
+
+function ElvUI_EltreumUI:QUEST_ACCEPTED()
+	E:Delay(0.5, ElvUI_EltreumUI.UpdateZoneQuests)
 end
 
 function ElvUI_EltreumUI:PLAYER_TARGET_CHANGED()
@@ -541,6 +555,7 @@ function ElvUI_EltreumUI:Initialize()
 	end
 	ElvUI_EltreumUI:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
 	ElvUI_EltreumUI:RegisterEvent("GUILD_PARTY_STATE_UPDATED")
+	ElvUI_EltreumUI:RegisterEvent("QUEST_ACCEPTED")
 end
 
 local function CallbackInitialize()

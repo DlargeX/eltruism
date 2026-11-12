@@ -391,6 +391,23 @@ function ElvUI_EltreumUI:EnteringWorldCVars()
 	end
 end
 
+--restore nameplate cvars if user wants
+function ElvUI_EltreumUI:RestoreNameplateNames()
+	SetCVar('nameplateShowFriendlyMinions', 1)
+	SetCVar('nameplateShowEnemies', 1)
+	SetCVar("nameplateShowFriends", 1)
+	SetCVar('UnitNameHostleNPC', 1)
+	SetCVar('UnitNameInteractiveNPC', 1)
+	SetCVar('UnitNameNPC', 1)
+	SetCVar('UnitNameEnemyGuardianName', 1)
+	SetCVar('UnitNameEnemyMinionName', 1)
+	SetCVar('UnitNameEnemyPetName', 1)
+	SetCVar('UnitNameFriendlyPetName', 1)
+	SetCVar('UnitNameEnemyPlayerName', 1)
+	SetCVar('UnitNameEnemyTotemName', 1)
+	SetCVar('UnitNameNonCombatCreatureName', 1)
+end
+
 --Better EventTrace CLEU logging thanks to ;Meorawr.wtf.lua;
 function ElvUI_EltreumUI:DevTools()
 	if E.db.ElvUI_EltreumUI.dev then
@@ -604,18 +621,26 @@ function ElvUI_EltreumUI:AddGameMenuButton()
 	end
 
 	--local originalMenuHeight = GameMenuFrame:GetHeight() --this gives 538 so,
-	if E.Retail then
+	--in forever its 477, so minus my button at 36 = 451 (or 450), which has the elvui button
+	--turns out that despite having 11 buttons (so 9 defaults + elvui and eltruism buttons), it says 9, wether i count it myself or use the one they have
+	if E.Modern then
+		GameMenuFrame:Height((_G.GameMenuFrame.buttonCount*offset) + 218) --dynamically adjust based on button count
+	else
+		GameMenuFrame:Height(320 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
+	end
+
+	--[[if E.Retail then
 		GameMenuFrame:Height(538 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
 	elseif E.Forever then
 		GameMenuFrame:Height(456 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
 	else
 		GameMenuFrame:Height(320 + offset) --yes i can set the actual math but this lets me recall its + menubutton height
-	end
+	end]]
 
 	--use elvui moveui instead of blizzard edit mode
 	--local EditModeButton = _G.GameMenuFrame.MenuButtons and _G.GameMenuFrame.MenuButtons[_G.HUD_EDIT_MODE_MENU]
-	if EditModeButton and not EditModeButton.EltruismHooked then
-		EditModeButton.EltruismHooked = true
+	if EditModeButton then --and not EditModeButton.EltruismHooked then --turns out in forever the script gets rewritten so i need to rewrite again
+		--EditModeButton.EltruismHooked = true
 		ElvUI_EltreumUI:MacroClick(EditModeButton)
 
 		EditModeButton:SetScript("OnClick", function(_, button)
@@ -672,6 +697,19 @@ EltruismGameMenu:SetScript("OnEvent", function()
 		end
 	end
 end)
+
+--also add something special to edit mode
+function ElvUI_EltreumUI:EditModeMusic()
+	if E.db.ElvUI_EltreumUI.musicEnabled then
+		if E.ConfigurationMode then
+			_G.StopMusic()
+			_G.PlayMusic([[Interface\AddOns\ElvUI_EltreumUI\Media\Music\EditMode.mp3]])
+		else
+			_G.StopMusic()
+		end
+	end
+end
+ElvUI_EltreumUI:SecureHook(E, "ToggleMoveMode", "EditModeMusic")
 
 --make the video options movable because its annoying when adjusting settings
 local VideoOptionsFrame = _G.VideoOptionsFrame --Classic/Cata
@@ -1128,6 +1166,83 @@ function ElvUI_EltreumUI:CheckForeverSpec()
 	end
 
 	return specID, dominantName, spent1, spent2, spent3
+end
+
+--toggle the fader
+function ElvUI_EltreumUI:ToggleFader()
+	if E.db["unitframe"]["units"]["player"]["fader"]["enable"] then
+		--action bars
+		E.db["actionbar"]["bar1"]["inheritGlobalFade"] = false
+		E.db["actionbar"]["bar2"]["inheritGlobalFade"] = false
+		E.db["actionbar"]["bar3"]["inheritGlobalFade"] = false
+		E.db["actionbar"]["bar4"]["inheritGlobalFade"] = false
+		E.db["actionbar"]["bar5"]["inheritGlobalFade"] = false
+
+		--unitframes
+		E.db["unitframe"]["units"]["player"]["fader"]["enable"] = false
+		E.db["unitframe"]["units"]["pet"]["fader"]["enable"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["range"] = true
+
+		ElvUI_EltreumUI:Print(L["ElvUI Fader disabled"])
+	else
+		--action bars
+		E.db["actionbar"]["bar1"]["inheritGlobalFade"] = true
+		E.db["actionbar"]["bar2"]["inheritGlobalFade"] = true
+		E.db["actionbar"]["bar3"]["inheritGlobalFade"] = true
+		E.db["actionbar"]["bar4"]["inheritGlobalFade"] = true
+		E.db["actionbar"]["bar5"]["inheritGlobalFade"] = true
+
+		--unitframes
+		E.db["unitframe"]["units"]["player"]["fader"]["casting"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["combat"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["enable"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["focus"] = false
+		E.db["unitframe"]["units"]["player"]["fader"]["health"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["hover"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["playertarget"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["power"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["unittarget"] = false
+		E.db["unitframe"]["units"]["player"]["fader"]["vehicle"] = true
+		E.db["unitframe"]["units"]["player"]["fader"]["minAlpha"] = 0
+		E.db["unitframe"]["units"]["pet"]["fader"]["casting"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["combat"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["health"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["hover"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["minAlpha"] = 0
+		E.db["unitframe"]["units"]["pet"]["fader"]["playertarget"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["power"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["range"] = false
+		E.db["unitframe"]["units"]["pet"]["fader"]["unittarget"] = true
+		E.db["unitframe"]["units"]["pet"]["fader"]["vehicle"] = true
+
+		ElvUI_EltreumUI:Print(L["ElvUI Fader enabled"])
+	end
+
+	--shared
+	E.db["unitframe"]["units"]["boss"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["boss"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["target"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["target"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["targettarget"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["targettarget"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["focus"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["focus"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["arena"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["arena"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["party"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["party"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["tank"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["tank"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["assist"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["assist"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["raid1"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["raid1"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["raid2"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["raid2"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["raid3"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["raid3"]["fader"]["range"] = true
+	E.db["unitframe"]["units"]["raidpet"]["fader"]["enable"] = true
+	E.db["unitframe"]["units"]["raidpet"]["fader"]["range"] = true
 end
 
 --cursor positioning with 60 FPS throttle

@@ -1,7 +1,6 @@
 local E, L = unpack(ElvUI)
 local _G = _G
 --local pairs = _G.pairs
-local SetCVar = _G.C_CVar and _G.C_CVar.SetCVar or _G.SetCVar
 local GetPhysicalScreenSize = _G.GetPhysicalScreenSize
 
 -- for rare nameplates
@@ -287,7 +286,11 @@ function ElvUI_EltreumUI:SetupNamePlates()
 		E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["parent"] = "Health"
 		E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["xOffset"] = -6
 		E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["yOffset"] = -13
-		E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["format"] = ""
+		if E.Retail then
+			E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["format"] = ""
+		else
+			E.db["nameplates"]["units"]["ENEMY_NPC"]["level"]["format"] = "[difficultycolor][smartlevel]"
+		end
 		E.db["nameplates"]["units"]["ENEMY_NPC"]["name"]["font"] = "Kimberley"
 		if width == 3840 then
 			E.db["nameplates"]["units"]["ENEMY_NPC"]["name"]["fontOutline"] = "THICKOUTLINE"
@@ -401,7 +404,7 @@ function ElvUI_EltreumUI:SetupNamePlates()
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["level"]["yOffset"] = -9
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["font"] = "Kimberley"
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["fontOutline"] = "THICKOUTLINE"
-		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["format"] = "[namecolor][name][realm:dash]"
+		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["format"] = E.Forever and "[namecolor][name]" or "[namecolor][name][realm:dash]"
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["position"] = "CENTER"
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["name"]["yOffset"] = 15
 		E.db["nameplates"]["units"]["ENEMY_PLAYER"]["power"]["text"]["font"] = "Kimberley"
@@ -519,7 +522,7 @@ function ElvUI_EltreumUI:SetupNamePlates()
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["level"]["yOffset"] = -8
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["font"] = "Kimberley"
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["fontSize"] = 12
-		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["format"] = "[namecolor][name:title][realm:dash]"
+		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["format"] = E.Forever and "[namecolor][name:title]" or "[namecolor][name:title][realm:dash]"
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["position"] = "CENTER"
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["name"]["yOffset"] = 15
 		E.db["nameplates"]["units"]["FRIENDLY_PLAYER"]["power"]["text"]["font"] = "Kimberley"
@@ -869,20 +872,3 @@ end
 		ElvUI_EltreumUI:Print(L["NamePlate Style Filters were set."])
 	end
 end]]
-
---restore nameplate cvars if user wants
-function ElvUI_EltreumUI:RestoreNameplateNames()
-	SetCVar('nameplateShowFriendlyMinions', 1)
-	SetCVar('nameplateShowEnemies', 1)
-	SetCVar("nameplateShowFriends", 1)
-	SetCVar('UnitNameHostleNPC', 1)
-	SetCVar('UnitNameInteractiveNPC', 1)
-	SetCVar('UnitNameNPC', 1)
-	SetCVar('UnitNameEnemyGuardianName', 1)
-	SetCVar('UnitNameEnemyMinionName', 1)
-	SetCVar('UnitNameEnemyPetName', 1)
-	SetCVar('UnitNameFriendlyPetName', 1)
-	SetCVar('UnitNameEnemyPlayerName', 1)
-	SetCVar('UnitNameEnemyTotemName', 1)
-	SetCVar('UnitNameNonCombatCreatureName', 1)
-end

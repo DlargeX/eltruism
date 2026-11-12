@@ -577,7 +577,7 @@ local function BlizzShadows(arg)
 			end
 			if IsAddOnLoaded("ElvUI_WindTools") then
 				if E.db.WT.item.inspect.inspect then
-					if _G["InspectFrame"] then
+					if _G["InspectFrame"] and not _G["InspectFrame"].EltruismShadowHooked then
 						_G["InspectFrame"]:HookScript("OnShow", function()
 							E:Delay(1, function()
 								if _G["InspectFrame"].inspectFrame then
@@ -596,6 +596,7 @@ local function BlizzShadows(arg)
 								end
 							end)
 						end)
+						_G["InspectFrame"].EltruismShadowHooked = true
 					end
 				end
 			end
@@ -938,6 +939,8 @@ local function BlizzShadows(arg)
 						_G.ProfessionsFrame.Professions2Tab,
 						_G.ProfessionsFrame.Professions3Tab,
 						_G.ProfessionsFrame.Professions4Tab,
+						_G.ProfessionsFrame.Professions5Tab,
+						_G.ProfessionsFrame.Professions6Tab,
 					}
 					for _, frame in pairs(foreverprofessions) do
 						if frame then
@@ -1192,6 +1195,9 @@ function ElvUI_EltreumUI:Shadows()
 				_G.LFGListInviteDialog,
 				_G.LFGParentFrameTab1,
 				_G.LFGParentFrameTab2,
+				_G.LFGParentFrame and _G.LFGParentFrame.ListingTab,
+				_G.LFGParentFrame and _G.LFGParentFrame.BrowsingTab,
+				_G.LFGParentFrame and _G.LFGParentFrame.WhoListingTab,
 				_G.LootFrame,
 				_G.LootHistoryFrame and _G.LootHistoryFrame.ResizeButton,
 				_G.LossOfControlFrame,
@@ -1293,8 +1299,8 @@ function ElvUI_EltreumUI:Shadows()
 				E.Modern and _G.WorldMapFrame and _G.QuestMapFrame and _G.QuestMapFrame.QuestsTab,
 				E.Modern and _G.WorldMapFrame and _G.QuestMapFrame and _G.QuestMapFrame.MapLegendTab,
 				E.Modern and _G.WorldMapFrame and _G.QuestMapFrame and _G.QuestMapFrame.EventsTab,
-				not E.Retail and _G.WorldMapFrame and _G.WorldMapFrame.BorderFrame,
-				not E.Retail and _G.WorldMapFrame and _G.WorldMapFrame.MiniBorderFrame,
+				not E.Modern and _G.WorldMapFrame and _G.WorldMapFrame.BorderFrame,
+				not E.Modern and _G.WorldMapFrame and _G.WorldMapFrame.MiniBorderFrame,
 				_G.WorldMapTooltip,
 				_G.WorldStateScoreFrame,
 				_G.WorldStateScoreFrameTab1,
@@ -1313,6 +1319,7 @@ function ElvUI_EltreumUI:Shadows()
 				_G.CooldownViewerSettings and _G.CooldownViewerSettings.SpellsTab and _G.CooldownViewerSettings.SpellsTab.backdrop, --retail new cd
 				_G.CooldownViewerSettings and _G.CooldownViewerSettings.AurasTab and _G.CooldownViewerSettings.AurasTab.backdrop, --retail new cd
 				--_G.DamageMeterSessionWindow1,
+				_G.SocialUIFrame,
 			}
 			for _, frame in pairs(blizzardframes) do
 				if frame then
@@ -1353,23 +1360,29 @@ function ElvUI_EltreumUI:Shadows()
 				end
 			end)
 
-			hooksecurefunc(_G.AlertFrame, "AddAlertFrame", function(_,frame)
-				if frame and frame.backdrop and not frame.backdrop.shadow then
-					frame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					ElvUI_EltreumUI:ShadowColor(frame.backdrop.shadow)
-				end
-			end)
+			if not _G.AlertFrame.AlertFrameShadowHooked then
+				hooksecurefunc(_G.AlertFrame, "AddAlertFrame", function(_,frame)
+					if frame and frame.backdrop and not frame.backdrop.shadow then
+						frame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+						ElvUI_EltreumUI:ShadowColor(frame.backdrop.shadow)
+					end
+				end)
+				_G.AlertFrame.AlertFrameShadowHooked = true
+			end
 
 			--mirror timer shadow
 			if E.Mists or E.TBC or E.Wrath then
-				hooksecurefunc('TimerTracker_StartTimerOfType', function() --from elvui
-					for _, frame in pairs(_G.TimerTracker.timerList) do
-						if frame and frame.bar and not frame.bar.shadow then
-							frame.bar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-							ElvUI_EltreumUI:ShadowColor(frame.bar.shadow)
+				if not _G.TimerTracker.TimerTrackerShadowHooked then
+					hooksecurefunc('TimerTracker_StartTimerOfType', function() --from elvui
+						for _, frame in pairs(_G.TimerTracker.timerList) do
+							if frame and frame.bar and not frame.bar.shadow then
+								frame.bar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+								ElvUI_EltreumUI:ShadowColor(frame.bar.shadow)
+							end
 						end
-					end
-				end)
+					end)
+					_G.TimerTracker.TimerTrackerShadowHooked = true
+				end
 			end
 
 			if IsAddOnLoaded("Rarity") then --rarity loads these before
@@ -1391,17 +1404,18 @@ function ElvUI_EltreumUI:Shadows()
 		------------------------------------------------------------------------------------------------------ minimap
 		if E.private.general.minimap.enable and not (E.db.ElvUI_EltreumUI.borders.borders and E.db.ElvUI_EltreumUI.borders.minimapborder) and E.db.ElvUI_EltreumUI.skins.shadow.minimap then
 
-			local Minimapsizex, Minimapsizey = _G["Minimap"]:GetSize()
-			MinimapShadow:SetSize(Minimapsizex, Minimapsizey)
 			MinimapShadow:SetParent(_G["Minimap"])
-			if not (self.minimapIsSkinned) then
+			if not (MinimapShadow.minimapIsSkinned) then
+				local Minimapsizex, Minimapsizey = _G["Minimap"]:GetSize()
+				MinimapShadow:SetSize(Minimapsizex, Minimapsizey)
 				MinimapShadow:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 				MinimapShadow:SetPoint("TOPRIGHT", _G["Minimap"] ,"TOPRIGHT", 0, 0)
 				MinimapShadow:SetPoint("BOTTOMLEFT", _G["MinimapPanel"] ,"BOTTOMLEFT", 0, 0)
 				if not E.db.datatexts.panels.MinimapPanel.backdrop or not E.db.datatexts.panels.MinimapPanel.enable then
 					MinimapShadow:SetPoint("BOTTOMLEFT", _G["Minimap"] ,"BOTTOMLEFT", 0, 0)
 				end
-				if IsAddOnLoaded("ElvUI_SLE") and E.private.sle.minimap.rectangle then --Shadow and Light Rectangle Minimap
+				if E.db.ElvUI_EltreumUI.otherstuff.rectangleMinimap.enable or (IsAddOnLoaded("ElvUI_SLE") and E.private.sle.minimap.rectangle) then --Eltruism or Shadow and Light Rectangle Minimap
+					MinimapShadow:ClearAllPoints()
 					if E.db.datatexts.panels.MinimapPanel.backdrop and E.db.datatexts.panels.MinimapPanel.enable then
 						MinimapShadow:SetPoint("TOPRIGHT", _G["Minimap"].backdrop ,"TOPRIGHT", 0, 0)
 						MinimapShadow:SetPoint("BOTTOMLEFT", _G["MinimapPanel"] ,"BOTTOMLEFT", 0, 0)
@@ -1418,9 +1432,13 @@ function ElvUI_EltreumUI:Shadows()
 						end
 					end
 				end
-				MinimapShadow:Show()
+				if E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.circle then
+					MinimapShadow:Hide()
+				else
+					MinimapShadow:Show()
+				end
 				ElvUI_EltreumUI:ShadowColor(MinimapShadow.shadow)
-				self.minimapIsSkinned = true
+				MinimapShadow.minimapIsSkinned = true
 			end
 		end
 		------------------------------------------------------------------------------------------------------ tooltip
@@ -1481,7 +1499,7 @@ function ElvUI_EltreumUI:Shadows()
 			end
 		end
 		------------------------------------------------------------------------------------------------------version specific
-		if E.Modern then
+		if E.Retail then
 			if E.db.ElvUI_EltreumUI.skins.shadow.blizzard then --reputation detail got moved
 				if _G.ReputationFrame and _G.ReputationFrame.ReputationDetailFrame then
 					_G.ReputationFrame.ReputationDetailFrame:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
@@ -1600,26 +1618,32 @@ function ElvUI_EltreumUI:Shadows()
 
 			--elvui config shadows
 			if E.private.skins.blizzard.enable then
-				hooksecurefunc(E, "ToggleOptions", function()
-					local frame = E:Config_GetWindow()
-					if frame and not frame.shadow then
-						frame:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-						ElvUI_EltreumUI:ShadowColor(frame.shadow)
-					end
-				end)
+				if not self.ElvUIConfigShadowHooked then
+					hooksecurefunc(E, "ToggleOptions", function()
+						local frame = E:Config_GetWindow()
+						if frame and not frame.shadow then
+							frame:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+							ElvUI_EltreumUI:ShadowColor(frame.shadow)
+						end
+					end)
+					self.ElvUIConfigShadowHooked = true
+				end
 			end
 
 			--statusreport
-			hooksecurefunc(E, "ShowStatusReport", function()
-				if _G["ElvUIStatusReport"] and not _G["ElvUIStatusReport"].shadow then
-					_G["ElvUIStatusReport"]:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					ElvUI_EltreumUI:ShadowColor(_G["ElvUIStatusReport"].shadow)
-				end
-				if _G["ElvUIStatusPlugins"] and not _G["ElvUIStatusPlugins"].shadow then
-					_G["ElvUIStatusPlugins"]:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					ElvUI_EltreumUI:ShadowColor(_G["ElvUIStatusPlugins"].shadow)
-				end
-			end)
+			if not self.StatusReportShadowHooked then
+				hooksecurefunc(E, "ShowStatusReport", function()
+					if _G["ElvUIStatusReport"] and not _G["ElvUIStatusReport"].shadow then
+						_G["ElvUIStatusReport"]:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+						ElvUI_EltreumUI:ShadowColor(_G["ElvUIStatusReport"].shadow)
+					end
+					if _G["ElvUIStatusPlugins"] and not _G["ElvUIStatusPlugins"].shadow then
+						_G["ElvUIStatusPlugins"]:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
+						ElvUI_EltreumUI:ShadowColor(_G["ElvUIStatusPlugins"].shadow)
+					end
+				end)
+				self.StatusReportShadowHooked = true
+			end
 		end
 		------------------------------------------------------------------------------------------------------action bars
 		if E.db.ElvUI_EltreumUI.skins.shadow.actionbars then
@@ -4003,29 +4027,29 @@ function ElvUI_EltreumUI:Shadows()
 					_G.LeftChatPanel.backdrop.shadow.BottomLeftCorner:Hide()
 				end
 			else
-				if not (self.RightChatIsSkinned) then
+				if not (_G["RightChatPanel"].RightChatIsSkinned) then
 					RightChatShadow.shadow = RightChatShadow:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					RightChatShadow:SetPoint("TOPRIGHT", _G["RightChatPanel"] ,"TOPRIGHT", 0, 0)
+					RightChatShadow:SetPoint("TOPRIGHT", _G["RightChatPanel"], "TOPRIGHT", 0, 0)
 					if E.db.datatexts.panels.RightChatDataPanel.enable then
-						RightChatShadow:SetPoint("BOTTOMLEFT", _G["RightChatDataPanel"] ,"BOTTOMLEFT", 0, 0)
+						RightChatShadow:SetPoint("BOTTOMLEFT", _G["RightChatDataPanel"], "BOTTOMLEFT", 0, 0)
 					else
-						RightChatShadow:SetPoint("BOTTOMLEFT", _G["RightChatPanel"] ,"BOTTOMLEFT", 0, 0)
+						RightChatShadow:SetPoint("BOTTOMLEFT", _G["RightChatPanel"], "BOTTOMLEFT", 0, 0)
 					end
 					RightChatShadow:Show()
 					ElvUI_EltreumUI:ShadowColor(RightChatShadow.shadow)
-					self.RightChatIsSkinned = true
+					_G["RightChatPanel"].RightChatIsSkinned = true
 				end
-				if not (self.LeftChatIsSkinned) then
+				if not (_G["LeftChatPanel"].LeftChatIsSkinned) then
 					LeftChatShadow.shadow = LeftChatShadow:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
-					LeftChatShadow:SetPoint("TOPLEFT", _G["LeftChatPanel"] ,"TOPLEFT", 0, 0)
+					LeftChatShadow:SetPoint("TOPLEFT", _G["LeftChatPanel"], "TOPLEFT", 0, 0)
 					if E.db.datatexts.panels.LeftChatDataPanel.enable then
-						LeftChatShadow:SetPoint("BOTTOMRIGHT", _G["LeftChatDataPanel"] ,"BOTTOMRIGHT", 0, 0)
+						LeftChatShadow:SetPoint("BOTTOMRIGHT", _G["LeftChatDataPanel"], "BOTTOMRIGHT", 0, 0)
 					else
-						LeftChatShadow:SetPoint("BOTTOMRIGHT", _G["LeftChatPanel"] ,"BOTTOMRIGHT", 0, 0)
+						LeftChatShadow:SetPoint("BOTTOMRIGHT", _G["LeftChatPanel"], "BOTTOMRIGHT", 0, 0)
 					end
 					LeftChatShadow:Show()
 					ElvUI_EltreumUI:ShadowColor(LeftChatShadow.shadow)
-					self.LeftChatIsSkinned = true
+					_G["LeftChatPanel"].LeftChatIsSkinned = true
 				end
 			end
 			if E.db.chat.panelBackdrop == "LEFT" then
@@ -4088,13 +4112,14 @@ function ElvUI_EltreumUI:Shadows()
 					MB.bar:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 					ElvUI_EltreumUI:ShadowColor(MB.bar.shadow)
 				else
-					if MB.SetButtonMouseOver then
+					if MB.SetButtonMouseOver and not MB.EltruismShadowHooked then
 						hooksecurefunc(MB,"SetButtonMouseOver", function(_,button)
 							if button and button.backdrop and not button.backdrop.shadow then
 								button.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 								ElvUI_EltreumUI:ShadowColor(button.backdrop.shadow)
 							end
 						end)
+						MB.EltruismShadowHooked = true
 					end
 					for _, v in pairs({MB.bar:GetChildren()}) do
 						if v and v.backdrop and not v.backdrop.shadow then
@@ -4105,13 +4130,14 @@ function ElvUI_EltreumUI:Shadows()
 				end
 			end
 			local LL = WT:GetModule("LFGList")
-			if LL and LL.UpdateRightPanel then
+			if LL and LL.UpdateRightPanel and not LL.EltruismShadowHooked then
 				hooksecurefunc(LL,"UpdateRightPanel", function()
 					if LL.rightPanel and not LL.rightPanel.shadow then
 						LL.rightPanel:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 						ElvUI_EltreumUI:ShadowColor(LL.rightPanel.shadow)
 					end
 				end)
+				LL.EltruismShadowHooked = true
 			end
 
 			if _G["ParagonReputation_Toast"] and not _G["ParagonReputation_Toast"].shadow then
@@ -4120,13 +4146,14 @@ function ElvUI_EltreumUI:Shadows()
 			end
 
 			if E.db.WT.item.inspect.player then
-				if _G["PaperDollFrame"] then
+				if _G["PaperDollFrame"] and not _G["PaperDollFrame"].EltruismShadowHooked then
 					_G["PaperDollFrame"]:HookScript("OnShow",function()
 						if _G["PaperDollFrame"].inspectFrame and _G["PaperDollFrame"].inspectFrame.backdrop and not _G["PaperDollFrame"].inspectFrame.backdrop.shadow then
 							_G["PaperDollFrame"].inspectFrame.backdrop:CreateShadow(E.db.ElvUI_EltreumUI.skins.shadow.length)
 							ElvUI_EltreumUI:ShadowColor(_G["PaperDollFrame"].inspectFrame.backdrop.shadow)
 						end
 					end)
+					_G["PaperDollFrame"].EltruismShadowHooked = true
 				end
 			end
 

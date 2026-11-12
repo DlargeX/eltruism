@@ -26,9 +26,12 @@ function ElvUI_EltreumUI:UpdateEltruismSettings(update)
 
 		--dmg meter skin
 		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.enable = true
-		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconPack = "EltruismSpec"
-		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconSpec = false
+		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconPack = "Eltruism"
 		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.embed = true
+
+		--new minimap things
+		E.db.ElvUI_EltreumUI.otherstuff.minimapbuttons.enable = true
+		E.db.ElvUI_EltreumUI.otherstuff.minimapbuttons.toggleButton = true
 
 		ElvUI_EltreumUI:Print(L["Auto Update is enabled, updating Eltruism settings."])
 	else
@@ -37,8 +40,7 @@ function ElvUI_EltreumUI:UpdateEltruismSettings(update)
 
 		--dmg meter skin
 		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.enable = true
-		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconPack = "EltruismSpec"
-		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconSpec = false
+		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.iconPack = "Eltruism"
 		E.db.ElvUI_EltreumUI.skins.blizzdamagemeter.embed = true
 
 		-- Chat
@@ -277,6 +279,10 @@ function ElvUI_EltreumUI:UpdateEltruismSettings(update)
 
 		E.db.ElvUI_EltreumUI.otherstuff.delete = true
 		E.db.ElvUI_EltreumUI.otherstuff.gamemenu = true
+
+		--new minimap things
+		E.db.ElvUI_EltreumUI.otherstuff.minimapbuttons.enable = true
+		E.db.ElvUI_EltreumUI.otherstuff.minimapbuttons.toggleButton = true
 
 		-- Private
 		E.private.ElvUI_EltreumUI.nameplatepower.enable = true

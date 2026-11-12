@@ -8,6 +8,7 @@ P.ElvUI_EltreumUI = {
 	encountercheck = false,
 	disabledmodels = false,
 	editModeSpamWarning = true,
+	musicEnabled = false,
 
 	chat = {
 		enable = false,
@@ -678,6 +679,12 @@ P.ElvUI_EltreumUI = {
 			g = 0.50,
 			b = 0.70,
 		},
+		annoycolor = {
+			r = 1,
+			g = 1,
+			b = 1,
+			a = 1,
+		},
 		glowtotem1customcolor = {
 			r = 0.78,
 			g = 0.43,
@@ -769,6 +776,7 @@ P.ElvUI_EltreumUI = {
 
 	quests = {
 		enable = false,
+		onlyCurrentZoneQuests = false,
 		rogueopen = false,
 		arena = false,
 		combatenable = false,
@@ -2261,6 +2269,50 @@ P.ElvUI_EltreumUI = {
 			fontsize = 12,
 			rotate = false,
 			circle = false,
+		},
+		rectangleMinimap = {
+			enable = false,
+			preset = "16:9",
+		},
+		minimapbuttons = {
+			enable = false,
+			barMouseOver = false,
+			mouseOverAlpha = 0,
+			backdrop = true,
+			transparent = true,
+			iconSize = 24,
+			buttonSpacing = 2,
+			buttonsPerRow = 12,
+			orientation = "HORIZONTAL",
+			reverseDirection = false,
+			shadow = true,
+			hoverHighlight = true,
+			hoverClassColor = true,
+			hoverColor = {
+				r = 0.50,
+				g = 0.70,
+				b = 1,
+			},
+			strata = "MEDIUM",
+			level = 12,
+			hideInCombat = false,
+			visibility = "[petbattle] hide; show",
+			blizzardButtonsPosition = "START",
+
+			-- Eltruism Toggle Button
+			toggleButton = false,
+			toggleButtonPosition = "MINIMAP",
+			toggleButtonAnchor = "TOPLEFT",
+			toggleButtonSize = 24,
+			barCollapsed = false,
+
+			-- Blizzard buttons
+			moveMail = true,
+			mailOnlyNew = true,
+			moveTracker = true,
+			moveGameTime = true,
+			moveGarrison = true,
+			moveAddonCompartment = true,
 		},
 		archeology = {
 			archeologyfontsize = 12,

@@ -1,4 +1,4 @@
-local E, L = unpack(ElvUI)
+local E, L, _, P = unpack(ElvUI)
 local M = E:GetModule('Minimap')
 local S = E:GetModule('Skins')
 local valuecolors = E.myClassColor
@@ -15,6 +15,10 @@ local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 local pairs = _G.pairs
 local hooksecurefunc = _G.hooksecurefunc
 local MAP_PIN = _G.MAP_PIN
+local math = _G.math
+local string = _G.string
+local ipairs = _G.ipairs
+local select = _G.select
 
 --Conversion of Time to Arrive weakaura (new version)
 if E.Modern then
@@ -22,10 +26,8 @@ if E.Modern then
 	local C_SuperTrack = _G.C_SuperTrack
 	local GetUnitSpeed = _G.GetUnitSpeed
 	local C_Navigation = _G.C_Navigation
-	local math = _G.math
 	local mathfloor = math.floor
 	local mathabs = math.abs
-	local string = _G.string
 	local stringlen = string.len
 	local stringformat = string.format
 	local stringmatch = string.match
@@ -165,7 +167,7 @@ if E.Modern then
 
 	function ElvUI_EltreumUI:WaypointTimeToArrive()
 		if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.enable then
-			if E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.autopin then
+			if not EltruismAutopin.AutopinRegistered and E.db.ElvUI_EltreumUI.waypoints.waypointetasetting.autopin then
 				EltruismAutopin:RegisterEvent("USER_WAYPOINT_UPDATED")
 				EltruismAutopin:RegisterEvent("PLAYER_ENTERING_WORLD") --doesnt seem to fire
 				EltruismAutopin:RegisterEvent("PLAYER_STARTED_MOVING")
@@ -189,6 +191,7 @@ if E.Modern then
 						end
 					end
 				end)
+				EltruismAutopin.AutopinRegistered = true
 			end
 
 			--try to fix issue where the MapCanvasPinMixin:SetPassThroughButtons() will throw a taint
@@ -270,19 +273,22 @@ if E.Modern then
 				end
 			end
 
-			EltruismTimeToArriveParent:RegisterEvent("USER_WAYPOINT_UPDATED")
-			EltruismTimeToArriveParent:RegisterEvent("WAYPOINT_UPDATE")
-			EltruismTimeToArriveParent:RegisterEvent("SUPER_TRACKING_CHANGED")
-			--EltruismTimeToArriveParent:SetScript("OnEvent", function(_, event)
-			EltruismTimeToArriveParent:SetScript("OnEvent", function()
-				local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
-				--print(instanceType,event,"waypoint")
-				if (C_Map.HasUserWaypoint() or C_SuperTrack.IsSuperTrackingAnything()) and (instanceType == "none" or instanceType == "neighborhood") then
-					EltruismTimeToArrive:SetScript("OnUpdate", ElvUI_EltreumUI.TimeToArriveOnUpdate)
-				else
-					EltruismTimeToArrive:SetScript("OnUpdate", nil)
-				end
-			end)
+			if not self.TimeToArriveRegistered then
+				EltruismTimeToArriveParent:RegisterEvent("USER_WAYPOINT_UPDATED")
+				EltruismTimeToArriveParent:RegisterEvent("WAYPOINT_UPDATE")
+				EltruismTimeToArriveParent:RegisterEvent("SUPER_TRACKING_CHANGED")
+				--EltruismTimeToArriveParent:SetScript("OnEvent", function(_, event)
+				EltruismTimeToArriveParent:SetScript("OnEvent", function()
+					local instanceType = ElvUI_EltreumUI:IsInInstance(nil,nil,nil,true)
+					--print(instanceType,event,"waypoint")
+					if (C_Map.HasUserWaypoint() or C_SuperTrack.IsSuperTrackingAnything()) and (instanceType == "none" or instanceType == "neighborhood") then
+						EltruismTimeToArrive:SetScript("OnUpdate", ElvUI_EltreumUI.TimeToArriveOnUpdate)
+					else
+						EltruismTimeToArrive:SetScript("OnUpdate", nil)
+					end
+				end)
+				self.TimeToArriveRegistered = true
+			end
 		end
 	end
 
@@ -491,32 +497,35 @@ end
 function ElvUI_EltreumUI:WorldMapScale()
 	if E.db.ElvUI_EltreumUI.otherstuff.worldmapscale then
 		if _G["WorldMapFrame"] then
-			_G["WorldMapFrame"]:HookScript("OnShow", function()
-				if not E.Modern then
-					if not InCombatLockdown then
-						if not IsAddOnLoaded("Leatrix_Maps") then
+			if not _G["WorldMapFrame"].EltruismScaleHooked then
+				_G["WorldMapFrame"]:HookScript("OnShow", function()
+					if not E.Modern then
+						if not InCombatLockdown then
+							if not IsAddOnLoaded("Leatrix_Maps") then
+								_G["WorldMapFrame"]:SetScale(E.db.ElvUI_EltreumUI.otherstuff.worldmapscalevalue)
+							end
+							if not _G["WorldMapFrame"]:HasScript("OnDragStart") then
+								_G["WorldMapFrame"]:SetMovable(true)
+								_G["WorldMapFrame"]:EnableMouse(true)
+								_G["WorldMapFrame"]:RegisterForDrag("LeftButton")
+								_G["WorldMapFrame"]:SetScript("OnDragStart", _G["WorldMapFrame"].StartMoving)
+								_G["WorldMapFrame"]:SetScript("OnDragStop", _G["WorldMapFrame"].StopMovingOrSizing)
+								_G["WorldMapFrame"]:SetClampedToScreen(true)
+							end
+						end
+					else
+						if ElvUI_EltreumUI:IsThisASafeSecret(_G["WorldMapFrame"],true) then
 							_G["WorldMapFrame"]:SetScale(E.db.ElvUI_EltreumUI.otherstuff.worldmapscalevalue)
 						end
-						if not _G["WorldMapFrame"]:HasScript("OnDragStart") then
-							_G["WorldMapFrame"]:SetMovable(true)
-							_G["WorldMapFrame"]:EnableMouse(true)
-							_G["WorldMapFrame"]:RegisterForDrag("LeftButton")
-							_G["WorldMapFrame"]:SetScript("OnDragStart", _G["WorldMapFrame"].StartMoving)
-							_G["WorldMapFrame"]:SetScript("OnDragStop", _G["WorldMapFrame"].StopMovingOrSizing)
-							_G["WorldMapFrame"]:SetClampedToScreen(true)
-						end
 					end
-				else
-					if ElvUI_EltreumUI:IsThisASafeSecret(_G["WorldMapFrame"],true) then
-						_G["WorldMapFrame"]:SetScale(E.db.ElvUI_EltreumUI.otherstuff.worldmapscalevalue)
-					end
-				end
-			end)
+				end)
+				_G["WorldMapFrame"].EltruismScaleHooked = true
+			end
 
 			--make the bounty select mouseover
 			if E.Modern then
 				for _, v in pairs({_G["WorldMapFrame"]:GetChildren()}) do
-					if v then
+					if v and not v.EltruismBountySkinned then
 						if v.BountyDropDown and v.BountyDropdownButton then
 							v:SetAlpha(0)
 							v:SetScript('OnEnter', function() v:SetAlpha(1) v.BountyDropdownButton:SetAlpha(1) end)
@@ -532,6 +541,7 @@ function ElvUI_EltreumUI:WorldMapScale()
 							v.BountyDropdownButton:GetNormalTexture():SetRotation(-1.57)
 							v.BountyDropdownButton:GetPushedTexture():SetRotation(-1.57)
 							v.BountyDropdownButton:GetDisabledTexture():SetRotation(-1.57)
+							v.EltruismBountySkinned = true
 						elseif v.BountyDropdown then
 							v:SetAlpha(0)
 							v:SetScript('OnEnter', function() v:SetAlpha(1) v.BountyDropdown:SetAlpha(1) end)
@@ -547,6 +557,7 @@ function ElvUI_EltreumUI:WorldMapScale()
 							v.BountyDropdown:GetNormalTexture():SetRotation(-1.57)
 							v.BountyDropdown:GetPushedTexture():SetRotation(-1.57)
 							v.BountyDropdown:GetDisabledTexture():SetRotation(-1.57)
+							v.EltruismBountySkinned = true
 						end
 					end
 				end
@@ -562,14 +573,17 @@ local ONUPDATE_INTERVAL2 = 0.016 --smooth for 60fps
 --add cardinal directions to minimap
 local Cardinals = CreateFrame("FRAME", "Eltruism Cardinal Directions")
 Cardinals:SetParent(Minimap)
-
 local function UpdateCardinalsRotation(_, elapsed)
 	TimeSinceLastUpdate2 = TimeSinceLastUpdate2 + elapsed
 	if TimeSinceLastUpdate2 >= ONUPDATE_INTERVAL2 then
 		TimeSinceLastUpdate2 = 0
+		if not (_G.Minimap and _G.Minimap:IsShown()) then return end
 		local facing = GetPlayerFacing()
 		if facing and E:NotSecretValue(facing) then
-			Minimap.EltruismRotate:SetRotation(-facing)
+			if Minimap.EltruismLastFacing ~= facing then
+				Minimap.EltruismRotate:SetRotation(-facing)
+				Minimap.EltruismLastFacing = facing
+			end
 		end
 	end
 end
@@ -738,9 +752,14 @@ function ElvUI_EltreumUI:MinimapCardinalDirections()
 			end
 			Cardinals.W:SetText("W")
 
-			Cardinals.N:SetPoint("BOTTOM", Minimap, "TOP", 0, -E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset)
+			local verticalInset = (ElvUI_EltreumUI.rectangleMinimapInset or 0) * (E.db.general.minimap.scale or 1)
+			Cardinals.N:ClearAllPoints()
+			Cardinals.E:ClearAllPoints()
+			Cardinals.S:ClearAllPoints()
+			Cardinals.W:ClearAllPoints()
+			Cardinals.N:SetPoint("BOTTOM", Minimap, "TOP", 0, -E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset - verticalInset)
 			Cardinals.E:SetPoint("LEFT", Minimap, "RIGHT", -E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset, 0)
-			Cardinals.S:SetPoint("TOP", Minimap, "BOTTOM", 0, E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset)
+			Cardinals.S:SetPoint("TOP", Minimap, "BOTTOM", 0, E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset + verticalInset)
 			Cardinals.W:SetPoint("RIGHT", Minimap, "LEFT", E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.offset, 0)
 
 			Cardinals.N:SetFont(E.LSM:Fetch("font", E.db.general.font), E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.fontsize, ElvUI_EltreumUI:FontFlag(E.db.general.fontStyle))
@@ -776,13 +795,354 @@ function ElvUI_EltreumUI:MinimapCardinalDirections()
 	end
 end
 
+-- Eltruism Rectangle Minimap
+local rectangleMaskPresets = {
+	["16:9"] = { heightFactor = 9 / 16, mask = "Interface\\AddOns\\ElvUI_EltreumUI\\Media\\Textures\\map_rectangle_16_9" },
+	["4:3"] = { heightFactor = 3 / 4, mask = "Interface\\AddOns\\ElvUI_EltreumUI\\Media\\Textures\\map_rectangle_4_3" },
+	["2:1"] = { heightFactor = 1 / 2, mask = "Interface\\AddOns\\ElvUI_EltreumUI\\Media\\Textures\\map_rectangle_2_1" },
+}
+local function GetMinimapVerticalCrop()
+	local otherstuff = E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.otherstuff
+	if not otherstuff or not otherstuff.rectangleMinimap or not otherstuff.rectangleMinimap.enable then
+		return 0, nil
+	end
+	if otherstuff.minimapcardinaldirections and otherstuff.minimapcardinaldirections.circle then
+		return 0, nil
+	end
+	local preset = rectangleMaskPresets[otherstuff.rectangleMinimap.preset] or rectangleMaskPresets["16:9"]
+	local mapSize = E.MinimapSize or (Minimap and Minimap:GetWidth()) or 140
+	local crop = math.floor((mapSize * (1 - preset.heightFactor)) * 0.5 + 0.5)
+	return crop, preset.mask
+end
+
+--HereBeDragons pins fix for rectangle minimap (questie, rarescanner and others)
+local HBD_PIN_LIBS = {
+	"HereBeDragons-Pins-2.0",
+	"HereBeDragonsQuestie-Pins-2.0",
+}
+local HBD_THROTTLE = 0 --controls how fast the OnUpdate runs, if higher than zero it will start blinking, i dont like that so for now keep it at zero
+
+--hook pins to track movement and keep alpha hidden if needed
+local function HookHereBeDragonsPin(pin, lib)
+	if not pin or pin.EltruismHbdHooked or not pin.IsObjectType or not pin:IsObjectType("Frame") then
+		return
+	end
+
+	pin.EltruismLib = lib
+
+	--if pin is hidden by rectangle minimap keep it hidden
+	hooksecurefunc(pin, "SetAlpha", function(self, alpha, skipFlag)
+		if not skipFlag and self.EltruismHidden then
+			if alpha and alpha > 0 then
+				self.EltruismOrigAlpha = alpha
+			end
+			self:SetAlpha(0, true)
+		end
+	end)
+	hooksecurefunc(pin, "Show", function(self)
+		if self.EltruismHidden then
+			self:SetAlpha(0, true)
+		end
+	end)
+	--flag lib as moved when a pin moves
+	hooksecurefunc(pin, "SetPoint", function(self)
+		if self.EltruismLib then
+			self.EltruismLib.EltruismPinsMoved = true
+		end
+	end)
+	pin.EltruismHbdHooked = true
+end
+
+--hide or show pins by setting alpha to avoid breaking other addons
+function ElvUI_EltreumUI:SetHereBeDragonsPinShown(pin, isShown)
+	if isShown then
+		if pin.EltruismHidden then
+			local restoreAlpha = pin.EltruismOrigAlpha or 1
+			pin:SetAlpha(restoreAlpha, true)
+			if pin.EnableMouse then
+				pin:EnableMouse(true)
+			end
+			pin.EltruismHidden = nil
+			pin.EltruismOrigAlpha = nil
+		end
+	else
+		if not pin.EltruismHidden then
+			local currentAlpha = pin:GetAlpha()
+			if currentAlpha and currentAlpha > 0 then
+				pin.EltruismOrigAlpha = currentAlpha
+			end
+			pin:SetAlpha(0, true)
+			if pin.EnableMouse then
+				pin:EnableMouse(false)
+			end
+			pin.EltruismHidden = true
+		end
+	end
+end
+
+--refresh pin visibility based on rectangle minimap crop
+function ElvUI_EltreumUI:RefreshHereBeDragonsPins(lib)
+	if not lib or not lib.activeMinimapPins or not Minimap then
+		return
+	end
+
+	local crop = GetMinimapVerticalCrop()
+	local isEnabled = crop > 0
+	local mapHeight = Minimap:GetHeight() or E.MinimapSize or 140
+	local halfHeightLimit = ((mapHeight - (crop * 2)) * 0.5) - 2
+	local minimapCenterY = select(2, Minimap:GetCenter())
+
+	--check if pins are inside the rectangle boundaries
+	for pin in pairs(lib.activeMinimapPins) do
+		local shouldShow = true
+		if isEnabled then
+			local _, _, _, _, yOfs = pin:GetPoint(1)
+			if yOfs then
+				shouldShow = math.abs(yOfs) <= halfHeightLimit
+			elseif minimapCenterY and pin.GetCenter then
+				local pinCenterY = select(2, pin:GetCenter())
+				if pinCenterY then
+					local scale = Minimap:GetEffectiveScale() or 1
+					shouldShow = (math.abs(pinCenterY - minimapCenterY) / scale) <= halfHeightLimit
+				end
+			end
+		end
+		if shouldShow ~= not pin.EltruismHidden then
+			self:SetHereBeDragonsPinShown(pin, shouldShow)
+		end
+	end
+end
+
+--hook herebedragons to mask pins outside rectangle minimap
+function ElvUI_EltreumUI:HereBeDragonsPinsFix()
+	if not _G.LibStub or not E.db or not E.db.ElvUI_EltreumUI or not E.db.ElvUI_EltreumUI.otherstuff then return end
+
+	for _, libName in ipairs(HBD_PIN_LIBS) do
+		local lib = _G.LibStub(libName, true)
+		if lib and lib.updateFrame and lib.activeMinimapPins then
+			if not lib.EltruismHbdHooked then
+				--hook icon creation methods
+				hooksecurefunc(lib, "AddMinimapIconWorld", function(_, icon)
+					if icon then
+						HookHereBeDragonsPin(icon, lib)
+						lib.EltruismPinsMoved = true
+					end
+				end)
+				hooksecurefunc(lib, "AddMinimapIconMap", function(_, icon)
+					if icon then
+						HookHereBeDragonsPin(icon, lib)
+						lib.EltruismPinsMoved = true
+					end
+				end)
+
+				--throttle onupdate to avoid unnecessary checks
+				lib.updateFrame:HookScript("OnUpdate", function(_, elapsed)
+					lib.EltruismTimer = (lib.EltruismTimer or 0) + elapsed
+					if lib.EltruismTimer < HBD_THROTTLE then
+						return
+					end
+					lib.EltruismTimer = 0
+
+					--hook any new pin that became active
+					local foundUnhookedPin = false
+					for pin in pairs(lib.activeMinimapPins) do
+						if pin and not pin.EltruismHbdHooked then
+							HookHereBeDragonsPin(pin, lib)
+							foundUnhookedPin = true
+						end
+					end
+
+					--return early if stationary and no new pins
+					if not foundUnhookedPin and not lib.EltruismPinsMoved then
+						return
+					end
+					lib.EltruismPinsMoved = nil
+
+					ElvUI_EltreumUI:RefreshHereBeDragonsPins(lib)
+				end)
+				lib.EltruismHbdHooked = true
+			end
+
+			--hook existing pins
+			if lib.minimapPins then
+				for pin in pairs(lib.minimapPins) do
+					HookHereBeDragonsPin(pin, lib)
+				end
+			end
+			for pin in pairs(lib.activeMinimapPins) do
+				HookHereBeDragonsPin(pin, lib)
+			end
+			self:RefreshHereBeDragonsPins(lib)
+		end
+	end
+end
+
+--some addons like questie or rarescanner load late
+local hbdEventFrame = CreateFrame("Frame")
+hbdEventFrame:RegisterEvent("ADDON_LOADED")
+hbdEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+hbdEventFrame:SetScript("OnEvent", function(_, event, addon)
+	local isLoaded = IsAddOnLoaded("Questie") or IsAddOnLoaded("RareScanner")
+	if event == "PLAYER_ENTERING_WORLD" or addon == "Questie" or addon == "RareScanner" or isLoaded or (addon and string.find(addon, "HereBeDragons")) then
+		ElvUI_EltreumUI:HereBeDragonsPinsFix()
+	end
+end)
+
+function ElvUI_EltreumUI:GetIconSettings(button)
+	local defaults = P.general.minimap.icons[button]
+	local profile = E.db.general.minimap.icons[button]
+	local scale = profile.scale or defaults.scale
+	local position = profile.position or defaults.position
+	local xOffset = profile.xOffset or defaults.xOffset
+	local yOffset = profile.yOffset or defaults.yOffset
+
+	local crop = GetMinimapVerticalCrop()
+	if crop > 0 and position then
+		local shift = crop * (E.db.general.minimap.scale or 1)
+		if string.find(position, "TOP") then
+			yOffset = (yOffset or 0) - shift
+		elseif string.find(position, "BOTTOM") then
+			yOffset = (yOffset or 0) + shift
+		end
+	end
+
+	return scale, position, xOffset, yOffset
+end
+
+local GetIconSettingsHook = false
+function ElvUI_EltreumUI:UpdateRectangleMinimap()
+	if InCombatLockdown() or not M.MapHolder then
+		return
+	end
+
+	if not GetIconSettingsHook and E.db.ElvUI_EltreumUI.otherstuff.rectangleMinimap.enable and M.GetIconSettings ~= ElvUI_EltreumUI.GetIconSettings then
+		M.GetIconSettings = ElvUI_EltreumUI.GetIconSettings
+		GetIconSettingsHook = true
+		M:UpdateSettings()
+		return
+	end
+
+	local crop, maskPath = GetMinimapVerticalCrop()
+	local borderOffset = E.PixelMode and 1 or 3
+
+	if crop <= 0 then
+		if self.rectangleMinimapInset then
+			self.rectangleMinimapInset = nil
+			Minimap:SetHitRectInsets(0, 0, 0, 0)
+
+			local isCircle = E.db.ElvUI_EltreumUI.otherstuff.minimapcardinaldirections.circle
+			if not isCircle then
+				if M.SetMinimapMask then
+					M:SetMinimapMask(true)
+				else
+					Minimap:SetMaskTexture(E.Modern and 130937 or [[interface\chatframe\chatframebackground]])
+				end
+			end
+
+			if Minimap.backdrop then
+				Minimap.backdrop:ClearAllPoints()
+				Minimap.backdrop:SetOutside(Minimap, borderOffset, borderOffset)
+			end
+			if Minimap.location then
+				Minimap.location:ClearAllPoints()
+				Minimap.location:Point("TOP", Minimap, "TOP", 0, -4)
+			end
+			local shadowFrame = _G["EltruismMiniMapShadowFrame"]
+			if shadowFrame and not isCircle then
+				if E.db.ElvUI_EltreumUI.skins.shadow.enable and E.db.ElvUI_EltreumUI.skins.shadow.minimap and not (E.db.ElvUI_EltreumUI.borders.borders and E.db.ElvUI_EltreumUI.borders.minimapborder) then
+					shadowFrame:ClearAllPoints()
+					shadowFrame:SetPoint("TOPRIGHT", Minimap, "TOPRIGHT", 0, 0)
+					if E.db.datatexts.panels.MinimapPanel.backdrop and E.db.datatexts.panels.MinimapPanel.enable and _G.MinimapPanel and _G.MinimapPanel:IsShown() then
+						shadowFrame:SetPoint("BOTTOMLEFT", _G.MinimapPanel, "BOTTOMLEFT", 0, 0)
+					else
+						shadowFrame:SetPoint("BOTTOMLEFT", Minimap, "BOTTOMLEFT", 0, 0)
+					end
+					shadowFrame:Show()
+				else
+					shadowFrame:Hide()
+				end
+			end
+		end
+		self:HereBeDragonsPinsFix()
+		return
+	end
+
+	self.rectangleMinimapInset = crop
+
+	local scale = E.db.general.minimap.scale or 1
+	local scaledCrop = crop * scale
+
+	Minimap:SetMaskTexture(maskPath)
+	Minimap:SetHitRectInsets(0, 0, crop, crop)
+	Minimap:SetClampedToScreen(true)
+	Minimap:SetClampRectInsets(0, 0, 0, 0)
+	Minimap:ClearAllPoints()
+	Minimap:Point("TOPRIGHT", M.MapHolder, "TOPRIGHT", -borderOffset / scale, (-borderOffset / scale) + crop)
+
+	if Minimap.backdrop then
+		Minimap.backdrop:ClearAllPoints()
+		Minimap.backdrop:SetOutside(Minimap, borderOffset, borderOffset - scaledCrop)
+	end
+
+	if Minimap.location then
+		Minimap.location:ClearAllPoints()
+		Minimap.location:Point("TOP", Minimap, "TOP", 0, -4 - scaledCrop)
+	end
+
+	local panel = _G.MinimapPanel
+	if panel and panel:IsShown() then
+		panel:ClearAllPoints()
+		panel:Point("TOPLEFT", Minimap, "BOTTOMLEFT", -E.Border, (E.PixelMode and 0 or -3) + scaledCrop)
+		panel:Point("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", E.Border, -23 + scaledCrop)
+	end
+
+	local visibleHeight = ((E.MinimapSize or Minimap:GetWidth()) - (crop * 2)) * scale
+	local panelHeight = (panel and panel:IsShown() and panel:GetHeight()) or 0
+	local croppedHeight = visibleHeight + panelHeight + (borderOffset * 2)
+	M.MapHolder:SetHeight(croppedHeight)
+	if _G.MinimapMover then
+		_G.MinimapMover:SetHeight(croppedHeight)
+	end
+
+	local shadowFrame = _G["EltruismMiniMapShadowFrame"]
+	if shadowFrame then
+		if E.db.ElvUI_EltreumUI.skins.shadow.enable and E.db.ElvUI_EltreumUI.skins.shadow.minimap and not (E.db.ElvUI_EltreumUI.borders.borders and E.db.ElvUI_EltreumUI.borders.minimapborder) then
+			local targetBackdrop = Minimap.backdrop or Minimap
+			shadowFrame:ClearAllPoints()
+			shadowFrame:SetPoint("TOPRIGHT", targetBackdrop, "TOPRIGHT", 0, 0)
+			if E.db.datatexts.panels.MinimapPanel.backdrop and E.db.datatexts.panels.MinimapPanel.enable and panel and panel:IsShown() then
+				shadowFrame:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 0, 0)
+			else
+				shadowFrame:SetPoint("BOTTOMLEFT", targetBackdrop, "BOTTOMLEFT", 0, 0)
+			end
+			shadowFrame:Show()
+		else
+			shadowFrame:Hide()
+		end
+	end
+	if Minimap.EltruismRotateShadow then
+		Minimap.EltruismRotateShadow:Hide()
+	end
+
+	if _G.HybridMinimap and _G.HybridMinimap.MapCanvas then
+		if not _G.HybridMinimap.EltruismMask then
+			_G.HybridMinimap.EltruismMask = _G.HybridMinimap:CreateMaskTexture()
+			_G.HybridMinimap.EltruismMask:SetAllPoints(_G.HybridMinimap)
+		end
+		_G.HybridMinimap.EltruismMask:SetTexture(maskPath)
+		_G.HybridMinimap.MapCanvas:SetMaskTexture(_G.HybridMinimap.EltruismMask)
+		_G.HybridMinimap.MapCanvas:SetUseMaskTexture(true)
+	end
+
+	self:HereBeDragonsPinsFix()
+end
+
 function ElvUI_EltreumUI:M_UpdateSettings()
-	if ElvUI_EltreumUI.MinimapCardinalDirections then
-		ElvUI_EltreumUI:MinimapCardinalDirections()
-	end
-	if ElvUI_EltreumUI.ElvUIMailTexture then
-		ElvUI_EltreumUI:ElvUIMailTexture()
-	end
+	ElvUI_EltreumUI:UpdateRectangleMinimap()
+	ElvUI_EltreumUI:MinimapCardinalDirections()
+	ElvUI_EltreumUI:ElvUIMailTexture()
+	ElvUI_EltreumUI:HandleBlizzardButtons()
+	ElvUI_EltreumUI:UpdateMinimapButtonBar()
 end
 ElvUI_EltreumUI:SecureHook(M, "UpdateSettings", "M_UpdateSettings")
 
